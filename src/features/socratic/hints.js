@@ -1,0 +1,1 @@
+export const HINT = 'Before choosing an equation, ask yourself: what does “released from rest” tell you about initial velocity? Check the constant-acceleration equations in your notes. Which one connects displacement, initial velocity, acceleration, and time without needing the final velocity? Choose a positive direction and keep your signs consistent.';

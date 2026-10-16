@@ -1,0 +1,5 @@
+/* Oceanic Academic + analytics_dashboard (1)/code.html.
+   Screen-specific Fidelity Modern tokens preserve the supplied chat design. */
+:root { --primary:#134074; --accent:#0077b6; --canvas:#f4f9fd; --surface:#fff; --well:#eff6fb; --ink:#0a2239; --muted:#415a77; --line:#c5d7e3; --focus:#48cae4; --font-ui:'Plus Jakarta Sans Variable',sans-serif; }
+.theme-chat { --primary:#313838; --accent:#971e55; --canvas:#e9fdff; --well:#d8fafd; --ink:#002022; --muted:#434848; --line:#c3c7c7; --focus:#006670; --font-ui:'Inter Variable',sans-serif; }
+@theme inline { --color-primary:var(--primary); --color-accent:var(--accent); --color-canvas:var(--canvas); --color-well:var(--well); --color-ink:var(--ink); --color-muted:var(--muted); --font-sans:var(--font-ui); --font-mono:'JetBrains Mono Variable',monospace; }
