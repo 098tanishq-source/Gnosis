@@ -1,0 +1,98 @@
+[
+  {
+    "id": "c11-phy",
+    "classNum": "11",
+    "subject": "Physics",
+    "title": "Physics Volume I & II",
+    "theme": "imac-teal",
+    "tabLabel": "PHYS-XI",
+    "accentColor": "#0098A6",
+    "zipFile": "/books/class-11-physics.zip",
+    "fileSize": "48.2 MB",
+    "chapters": [
+      { "num": "01", "title": "Units and Measurements", "pages": 24, "pdfPath": "https://ncert.nic.in/textbook/pdf/keph101.pdf" },
+      { "num": "02", "title": "Motion in a Straight Line", "pages": 28, "pdfPath": "https://ncert.nic.in/textbook/pdf/keph102.pdf" },
+      { "num": "03", "title": "Motion in a Plane", "pages": 34, "pdfPath": "https://ncert.nic.in/textbook/pdf/keph103.pdf" },
+      { "num": "04", "title": "Laws of Motion", "pages": 36, "pdfPath": "https://ncert.nic.in/textbook/pdf/keph104.pdf" },
+      { "num": "05", "title": "Work, Energy and Power", "pages": 30, "pdfPath": "https://ncert.nic.in/textbook/pdf/keph105.pdf" }
+    ]
+  },
+  {
+    "id": "c11-chem",
+    "classNum": "11",
+    "subject": "Chemistry",
+    "title": "Chemistry Volume I & II",
+    "theme": "felt-blue",
+    "tabLabel": "CHEM-XI",
+    "accentColor": "#4F86F7",
+    "zipFile": "/books/class-11-chemistry.zip",
+    "fileSize": "42.6 MB",
+    "chapters": [
+      { "num": "01", "title": "Some Basic Concepts of Chemistry", "pages": 26, "pdfPath": "https://ncert.nic.in/textbook/pdf/kech101.pdf" },
+      { "num": "02", "title": "Structure of Atom", "pages": 38, "pdfPath": "https://ncert.nic.in/textbook/pdf/kech102.pdf" },
+      { "num": "03", "title": "Classification of Elements", "pages": 28, "pdfPath": "https://ncert.nic.in/textbook/pdf/kech103.pdf" }
+    ]
+  },
+  {
+    "id": "c11-math",
+    "classNum": "11",
+    "subject": "Mathematics",
+    "title": "Mathematics Higher Secondary",
+    "theme": "gloss-red",
+    "tabLabel": "MATH-XI",
+    "accentColor": "#E5252A",
+    "zipFile": "/books/class-11-math.zip",
+    "fileSize": "39.1 MB",
+    "chapters": [
+      { "num": "01", "title": "Sets & Relations", "pages": 24, "pdfPath": "https://ncert.nic.in/textbook/pdf/kemh101.pdf" },
+      { "num": "02", "title": "Trigonometric Functions", "pages": 36, "pdfPath": "https://ncert.nic.in/textbook/pdf/kemh102.pdf" },
+      { "num": "03", "title": "Complex Numbers", "pages": 22, "pdfPath": "https://ncert.nic.in/textbook/pdf/kemh103.pdf" }
+    ]
+  },
+  {
+    "id": "c10-sci",
+    "classNum": "10",
+    "subject": "Science",
+    "title": "Science & Foundations",
+    "theme": "black-durable",
+    "tabLabel": "SCI-X",
+    "accentColor": "#22252A",
+    "zipFile": "/books/class-10-science.zip",
+    "fileSize": "36.5 MB",
+    "chapters": [
+      { "num": "01", "title": "Chemical Reactions and Equations", "pages": 20, "pdfPath": "https://ncert.nic.in/textbook/pdf/jesc101.pdf" },
+      { "num": "02", "title": "Acids, Bases and Salts", "pages": 26, "pdfPath": "https://ncert.nic.in/textbook/pdf/jesc102.pdf" },
+      { "num": "03", "title": "Life Processes", "pages": 38, "pdfPath": "https://ncert.nic.in/textbook/pdf/jesc106.pdf" }
+    ]
+  },
+  {
+    "id": "c10-math",
+    "classNum": "10",
+    "subject": "Mathematics",
+    "title": "Standard Mathematics",
+    "theme": "puffer-dark",
+    "tabLabel": "MATH-X",
+    "accentColor": "#1A1D20",
+    "zipFile": "/books/class-10-math.zip",
+    "fileSize": "32.0 MB",
+    "chapters": [
+      { "num": "01", "title": "Real Numbers", "pages": 18, "pdfPath": "https://ncert.nic.in/textbook/pdf/jemh101.pdf" },
+      { "num": "02", "title": "Polynomials", "pages": 20, "pdfPath": "https://ncert.nic.in/textbook/pdf/jemh102.pdf" }
+    ]
+  },
+  {
+    "id": "c9-sci",
+    "classNum": "9",
+    "subject": "Science",
+    "title": "General Science",
+    "theme": "felt-grey",
+    "tabLabel": "SCI-IX",
+    "accentColor": "#8E939B",
+    "zipFile": "/books/class-9-science.zip",
+    "fileSize": "31.4 MB",
+    "chapters": [
+      { "num": "01", "title": "Matter in Our Surroundings", "pages": 16, "pdfPath": "https://ncert.nic.in/textbook/pdf/iesc101.pdf" },
+      { "num": "02", "title": "Force and Laws of Motion", "pages": 28, "pdfPath": "https://ncert.nic.in/textbook/pdf/iesc108.pdf" }
+    ]
+  }
+]
