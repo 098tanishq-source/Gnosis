@@ -9,12 +9,12 @@ import Dashboard from './features/Dashboard/Dashboard';
 import './home.css';
 
 // ==========================================
-// FUTURE-PROOF LAZY-LOADED MODULE ARCHITECTURE
+// LAZY-LOADED MODULE ARCHITECTURE
 // ==========================================
 const MockTest = lazy(() => import('./features/mock-test/MockTest'));
 const SocraticAI = lazy(() => import('./features/socratic/SocraticAI'));
 const NcertHub = lazy(() => import('./features/ncert/NcertHub'));
-const TunnelPlayer = lazy(() => import('./features/player/TunnelPlayer'));
+const TunnelPlayer = lazy(() => import('./features/player/VideoTunnel'));
 
 // Loading screen fallback for standalone new-tab windows
 const StandaloneLoader = ({ label = 'Learning Workspace' }) => (
@@ -70,7 +70,7 @@ function StudyApp({ onHome, initialTab = 'test' }) {
           onClick={onHome} 
           style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '8px' }}
         >
-          ← Back to Gnosis home
+          [Back to Gnosis home]
         </button>
       </div>
       <Header onHome={onHome} lowPower={lowPower} onToggle={() => setLowPower(v => !v)} />
@@ -79,10 +79,10 @@ function StudyApp({ onHome, initialTab = 'test' }) {
         <h1 ref={heading} tabIndex={-1} className="page-title">{pages[tab]?.[0] || 'Learning Studio'}</h1>
         <p className="mb-8 mt-3 text-sm leading-6 text-muted">{pages[tab]?.[1] || 'Focus and deliberate practice.'}</p>
         <ErrorBoundary>
-          <Suspense fallback={<p role="status">Loading practice…</p>}>
+          <Suspense fallback={<p role="status">Loading practice...</p>}>
             <MockTest active={tab === 'test'} />
           </Suspense>
-          <Suspense fallback={<div className="card" role="status">Opening your learning space…</div>}>
+          <Suspense fallback={<div className="card" role="status">Opening your learning space...</div>}>
             {tab === 'ai' && <SocraticAI hint={hint} setHint={setHint} />}
             {tab === 'ncert' && <NcertHub />}
             {tab === 'player' && <TunnelPlayer />}
@@ -104,7 +104,7 @@ function Home({ onOpenDashboard, onOpenStudio }) {
   const dialog = useRef(null);
   const closeButton = useRef(null);
 
-  useEffect(() => {
+  useEffect(() => { 
     if (auth) { 
       dialog.current?.showModal(); 
       closeButton.current?.focus(); 
@@ -138,7 +138,7 @@ function Home({ onOpenDashboard, onOpenStudio }) {
           <div className="hero-shade" aria-hidden="true" />
           <div className="hero-topline">
             <span><i /> YOUR NEXT CHAPTER STARTS HERE</span>
-            <span className="hero-edition">GN / 001 — LEARNING, REIMAGINED</span>
+            <span className="hero-edition">GN / 001 - LEARNING, REIMAGINED</span>
           </div>
           <div className="hero-copy">
             <p className="hero-kicker">LESS MEMORISING. MORE UNDERSTANDING.</p>
@@ -157,7 +157,7 @@ function Home({ onOpenDashboard, onOpenStudio }) {
               </button>
               <button 
                 type="button" 
-                onClick={onOpenDashboard}
+                onClick={onOpenDashboard} 
                 className="hero-cta" 
                 style={{ background: '#fff', color: '#101010', border: 'none' }}
               >
@@ -192,7 +192,6 @@ function Home({ onOpenDashboard, onOpenStudio }) {
         <span>PROTOTYPE / 2026</span>
       </footer>
 
-      {/* Auth Preview Modal */}
       <dialog 
         ref={dialog} 
         className="auth-preview" 
@@ -224,12 +223,11 @@ function Home({ onOpenDashboard, onOpenStudio }) {
 // ROOT APP CONTAINER WITH UNIVERSAL DISPATCHER
 // ==========================================
 export default function App() {
-  // Helper to detect what page was requested via query params or hash
   const getRequestedRoute = () => {
     const search = window.location.search;
     const hash = window.location.hash;
 
-    // Check for direct standalone launches (e.g. ?page=ncert or #ncert)
+    // Direct standalone launches in dedicated tabs
     if (search.includes('page=ncert') || hash === '#ncert') return 'standalone-ncert';
     if (search.includes('page=socratic') || hash === '#socratic') return 'standalone-socratic';
     if (search.includes('page=player') || hash === '#player') return 'standalone-player';
@@ -249,7 +247,6 @@ export default function App() {
       const targetRoute = getRequestedRoute();
       setView(targetRoute);
 
-      // Check if a specific tab was requested for the studio (e.g., #studio?tab=ncert)
       if (window.location.hash.includes('tab=')) {
         const requestedTab = window.location.hash.split('tab=')[1]?.split('&')[0];
         if (requestedTab) setStudioTab(requestedTab);
@@ -302,7 +299,7 @@ export default function App() {
 
       {view === 'standalone-mocktest' && (
         <Suspense fallback={<StandaloneLoader label="Mock Test Examination Engine" />}>
-          <div style={{ minHeight: '100vh', background: '#F8FAFC', padding: '24px' }}>
+          <div style={{ minHeight: '100vh', width: '100vw', background: '#F8FAFC', padding: '24px', boxSizing: 'border-box', overflowY: 'auto' }}>
             <MockTest active={true} />
           </div>
         </Suspense>
