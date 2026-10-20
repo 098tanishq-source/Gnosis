@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import AboutSection from './Aboutsection';
-import QnaSection from './QnaSection';
+import QnaSection from './Qnasection';
 import { ArrowUpRight, ArrowDown, Plus, X } from 'lucide-react';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
