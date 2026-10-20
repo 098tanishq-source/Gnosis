@@ -5,7 +5,7 @@ import { ArrowUpRight, ArrowDown, Plus, X } from 'lucide-react';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
-import Dashboard from './features/Dashboard/Dashboard';
+import Dashboard from './features/dashboard/Dashboard';
 import './home.css';
 
 // ==========================================
