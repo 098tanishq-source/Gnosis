@@ -1,1692 +1,2158 @@
-import React, { useState, useEffect, useRef } from 'react';
-import KeepNotes from '../notes/KeepNotes';
-import QuizView from '../quiz/QuizView';
+import React, { useState, useEffect } from 'react';
+import { 
+  GraduationCap, 
+  LayoutGrid, 
+  FileEdit, 
+  HelpCircle, 
+  BrainCircuit, 
+  BookOpen, 
+  PlaySquare, 
+  LogOut, 
+  Smartphone, 
+  Search, 
+  Bell, 
+  ArrowUpRight, 
+  ArrowUp, 
+  Calendar as CalendarIcon, 
+  Video, 
+  Pause, 
+  Play, 
+  Square, 
+  ChevronLeft, 
+  ChevronRight, 
+  BookMarked, 
+  Dna, 
+  Binary, 
+  Zap, 
+  Sparkles, 
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  User, 
+  Plus,
+  Folder,
+  FolderPlus,
+  MoreHorizontal,
+  Edit3,
+  Clock,
+  FileCode,
+  Download,
+  X,
+  Check,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Heading2,
+  ArrowLeft
+} from 'lucide-react';
+import MockTest from '../mock-test/MockTest';
+import NcertHub from '../ncert/NcertHub';
 import VideoTunnel from '../player/VideoTunnel';
+import SocraticAI from '../socratic/SocraticAI';
+import '../../styles/tokens.css';
 
-const SUBJECT_METRICS = {
-  Physics: {
-    quotaText: '78 / 90',
-    quotaTopic: 'Rotational Dynamics',
-    pacingIndex: '1.4 min/Q',
-    bars: [
-      { month: 'Jan', val: 40, highlight: false },
-      { month: 'Feb', val: 65, highlight: false },
-      { month: 'Mar', val: 52, highlight: false },
-      { month: 'Apr', val: 95, highlight: true },
-      { month: 'May', val: 74, highlight: false },
-      { month: 'Jun', val: 60, highlight: false }
-    ],
-    courses: [
-      {
-        id: 'c-phy-1',
-        title: 'Class 11 Physics: Mechanics Mastery',
-        instructor: 'Prof. H. Verma',
-        tag: 'PHY-01',
-        tagBg: '#EDE9FE',
-        tagColor: '#6D28D9',
-        remaining: '8h 45 min',
-        progress: 45
-      },
-      {
-        id: 'c-phy-2',
-        title: 'Fluid Statics & Surface Tension Numericals',
-        instructor: 'Dr. Natalia Varnan',
-        tag: 'PHY-02',
-        tagBg: '#E0F2FE',
-        tagColor: '#0369A1',
-        remaining: '4h 10 min',
-        progress: 70
-      }
-    ],
-    drills: [
-      { name: "Fluid Mechanics: Surface Tension", date: "17 Oct 2026", time: "10:30 PM", status: "Mastered", score: "+4 Marks" },
-      { name: "Rotational Dynamics: Inertia Tensors", date: "16 Oct 2026", time: "11:45 PM", status: "Mastered", score: "+4 Marks" },
-      { name: "Incline Friction Limiting Angle", date: "15 Oct 2026", time: "09:15 PM", status: "Review Trap", score: "-1 Mark" }
-    ]
+// 10 Note Colors
+const COLOR_PRESETS = [
+  { id: 'yellow', label: 'Buttercup', bg: '#fef9c3', border: '#fde047', text: '#854d0e', iconBg: '#fef08a' },
+  { id: 'coral', label: 'Coral Peach', bg: '#ffe4e6', border: '#fecdd3', text: '#9f1239', iconBg: '#fecdd3' },
+  { id: 'blue', label: 'Sky Mist', bg: '#e0f2fe', border: '#bae6fd', text: '#0369a1', iconBg: '#bae6fd' },
+  { id: 'mint', label: 'Sage Mint', bg: '#dcfce7', border: '#bbf7d0', text: '#15803d', iconBg: '#bbf7d0' },
+  { id: 'lavender', label: 'Lilac Purple', bg: '#f3e8ff', border: '#e9d5ff', text: '#7e22ce', iconBg: '#e9d5ff' },
+  { id: 'pink', label: 'Bubblegum', bg: '#fce7f3', border: '#fbcfe8', text: '#be185d', iconBg: '#fbcfe8' },
+  { id: 'tangerine', label: 'Sunburst', bg: '#ffedd5', border: '#fed7aa', text: '#c2410c', iconBg: '#fed7aa' },
+  { id: 'matcha', label: 'Matcha Green', bg: '#ecfccb', border: '#d9f99d', text: '#4d7c0f', iconBg: '#d9f99d' },
+  { id: 'slate', label: 'Cool Smoke', bg: '#f1f5f9', border: '#cbd5e1', text: '#334155', iconBg: '#e2e8f0' },
+  { id: 'forest', label: 'Emerald Deep', bg: '#d1fae5', border: '#a7f3d0', text: '#065f46', iconBg: '#a7f3d0' }
+];
+
+const INITIAL_FOLDERS = [
+  { id: 'f-1', name: 'Wave Optics & Mechanics', subject: 'Physics', color: 'blue', date: '26/10/2026', pdfTitle: 'NCERT Ch 10 Optics Derivations (Official PDF)' },
+  { id: 'f-2', name: 'Organic Reaction Mechanisms', subject: 'Chemistry', color: 'coral', date: '24/10/2026', pdfTitle: 'Aldehydes & Ketones Mechanism Handout (PDF)' },
+  { id: 'f-3', name: 'Calculus & Vectors', subject: 'Mathematics', color: 'yellow', date: '21/10/2026', pdfTitle: 'Definite Integrals & Area Under Curves (PDF)' }
+];
+
+const INITIAL_NOTES = [
+  {
+    id: 'n-1',
+    folderId: 'f-1',
+    title: 'YDSE Fringe Width Derivation',
+    subject: 'Physics',
+    chapter: 'Ch 10: Wave Optics',
+    font: 'var(--font-heading)',
+    color: 'yellow',
+    date: '26/10/2026',
+    time: '11:30 AM, Monday',
+    content: `• Path difference: Δx = d·sin(θ) ≈ d·(y/D)\n• Bright fringe: Δx = n·λ\n• Dark fringe: Δx = (2n - 1)·(λ/2)\n• Fringe width: β = (λ·D)/d\n*Note*: Immersing apparatus in water reduces β by refractive index μ.`
   },
-  Chemistry: {
-    quotaText: '64 / 80',
-    quotaTopic: 'Electrophilic Addition & Mechanisms',
-    pacingIndex: '1.1 min/Q',
-    bars: [
-      { month: 'Jan', val: 50, highlight: false },
-      { month: 'Feb', val: 72, highlight: false },
-      { month: 'Mar', val: 68, highlight: false },
-      { month: 'Apr', val: 82, highlight: false },
-      { month: 'May', val: 94, highlight: true },
-      { month: 'Jun', val: 76, highlight: false }
-    ],
-    courses: [
-      {
-        id: 'c-chem-1',
-        title: 'Organic Chemistry Foundations & Mechanisms',
-        instructor: 'Dr. Natalia Varnan',
-        tag: 'CHM-01',
-        tagBg: '#FFE4E6',
-        tagColor: '#BE123C',
-        remaining: '18h 12 min',
-        progress: 75
-      },
-      {
-        id: 'c-chem-2',
-        title: 'Thermodynamics & Equilibrium Curves',
-        instructor: 'Prof. K. Sen',
-        tag: 'CHM-02',
-        tagBg: '#FEF3C7',
-        tagColor: '#B45309',
-        remaining: '6h 30 min',
-        progress: 35
-      }
-    ],
-    drills: [
-      { name: "Organic: Nucleophilic Addition", date: "17 Oct 2026", time: "09:40 PM", status: "Mastered", score: "+4 Marks" },
-      { name: "Markovnikov Rule & Carbocation Shifts", date: "16 Oct 2026", time: "10:15 PM", status: "Mastered", score: "+4 Marks" },
-      { name: "Enthalpy of Formation Traps", date: "14 Oct 2026", time: "08:20 PM", status: "Review Trap", score: "-1 Mark" }
-    ]
+  {
+    id: 'n-2',
+    folderId: 'f-1',
+    title: "Brewster's Law & Polarization",
+    subject: 'Physics',
+    chapter: 'Ch 10: Wave Optics',
+    font: 'var(--font-body)',
+    color: 'blue',
+    date: '25/10/2026',
+    time: '02:15 PM, Sunday',
+    content: `When light is incident at polarizing angle i_p, reflected and refracted rays are mutually perpendicular.\n\n1. Formula: μ = tan(i_p)\n2. Reflected light is completely plane polarized perpendicular to incidence plane.\n3. Refracted light remains partially polarized.`
   },
-  Mathematics: {
-    quotaText: '52 / 70',
-    quotaTopic: 'De Moivre’s Theorem & Complex Roots',
-    pacingIndex: '2.0 min/Q',
-    bars: [
-      { month: 'Jan', val: 35, highlight: false },
-      { month: 'Feb', val: 50, highlight: false },
-      { month: 'Mar', val: 64, highlight: false },
-      { month: 'Apr', val: 70, highlight: false },
-      { month: 'May', val: 80, highlight: false },
-      { month: 'Jun', val: 92, highlight: true }
-    ],
-    courses: [
-      {
-        id: 'c-math-1',
-        title: 'Differential Calculus & Limits Integration',
-        instructor: 'Prof. R. Sharma',
-        tag: 'MTH-01',
-        tagBg: '#DCFCE7',
-        tagColor: '#15803D',
-        remaining: '14h 25 min',
-        progress: 60
-      },
-      {
-        id: 'c-math-2',
-        title: 'Conic Sections: Parabola & Hyperbola',
-        instructor: 'Prof. M. Aggarwal',
-        tag: 'MTH-02',
-        tagBg: '#F3E8FF',
-        tagColor: '#7E22CE',
-        remaining: '9h 10 min',
-        progress: 25
-      }
-    ],
-    drills: [
-      { name: "De Moivre's Theorem & Roots", date: "17 Oct 2026", time: "11:10 PM", status: "Review Trap", score: "-1 Mark" },
-      { name: "Standard Limit Trigonometric Forms", date: "16 Oct 2026", time: "08:50 PM", status: "Mastered", score: "+4 Marks" },
-      { name: "Indefinite Integral Substitution", date: "15 Oct 2026", time: "10:30 PM", status: "Mastered", score: "+4 Marks" }
-    ]
+  {
+    id: 'n-3',
+    folderId: 'f-2',
+    title: 'Aldol vs Cannizzaro Reaction',
+    subject: 'Chemistry',
+    chapter: 'Ch 12: Aldehydes & Ketones',
+    font: 'var(--font-body)',
+    color: 'coral',
+    date: '24/10/2026',
+    time: '04:15 PM, Saturday',
+    content: `• Aldol Condensation:\n  - Requires at least one α-hydrogen atom.\n  - Reagent: Dilute NaOH.\n  - Forms β-hydroxy aldehyde.\n\n• Cannizzaro Reaction:\n  - Requires zero α-hydrogen (Formaldehyde, Benzaldehyde).\n  - Reagent: 50% Concentrated KOH.\n  - Disproportionation into carboxylic acid salt + primary alcohol.`
+  },
+  {
+    id: 'n-4',
+    folderId: 'f-3',
+    title: 'Integration by Parts (ILATE)',
+    subject: 'Mathematics',
+    chapter: 'Ch 7: Integrals',
+    font: 'var(--font-mono)',
+    color: 'lavender',
+    date: '22/10/2026',
+    time: '08:45 PM, Thursday',
+    content: `∫ u·v dx = u·∫ v dx - ∫ [ (du/dx) · ∫ v dx ] dx\n\nPriority: I (Inverse) > L (Log) > A (Algebraic) > T (Trig) > E (Exp)\nKing's Property: ∫_0^a f(x)dx = ∫_0^a f(a - x)dx.`
   }
-};
+];
+
+const DEFAULT_SUBJECTS = [
+  { id: 'phy', name: 'Physics' },
+  { id: 'chem', name: 'Chemistry' },
+  { id: 'math', name: 'Mathematics' },
+  { id: 'bio', name: 'Biology' },
+  { id: 'cs', name: 'Comp Science' }
+];
 
 export default function Dashboard({ onNavigate }) {
-  const [activeNavIndex, setActiveNavIndex] = useState(1);
-  const [hoveredNavIndex, setHoveredNavIndex] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('Physics');
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'notes' | 'quiz' | 'socratic' | 'profile' | 'player'
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const [leftPanelExpanded, setLeftPanelExpanded] = useState(false);
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const [isTunnelFullScreen, setIsTunnelFullScreen] = useState(false);
+  // Subject Carousel State
+  const [subjects, setSubjects] = useState(DEFAULT_SUBJECTS);
+  const [selectedSubject, setSelectedSubject] = useState('phy');
 
-  const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
-  const [courseFilter, setCourseFilter] = useState('Active');
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  // Time Tracker State
+  const [trackerSeconds, setTrackerSeconds] = useState(5048);
+  const [isTrackerRunning, setIsTrackerRunning] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(28);
 
-  const [selectedAssignment, setSelectedAssignment] = useState(null);
-  const [assignmentsList, setAssignmentsList] = useState([
-    {
-      id: 1,
-      title: "Fluid Mechanics Formulae",
-      subject: "Physics",
-      dueDate: "17 Oct 2026, 10:30 AM",
-      status: "In progress",
-      badgeColor: "#EDE9FE",
-      badgeText: "#6D28D9",
-      description: "Derive terminal velocity equations and compile standard values of surface tension coefficients for water and mercury.",
-      progress: 60
-    },
-    {
-      id: 2,
-      title: "Organic Synthesis PYQ",
-      subject: "Chemistry",
-      dueDate: "16 Oct 2026, 12:45 AM",
-      status: "Completed",
-      badgeColor: "#DCFCE7",
-      badgeText: "#15803D",
-      description: "Complete 25 previous years' questions on electrophilic addition mechanisms and Markovnikov additions.",
-      progress: 100
-    },
-    {
-      id: 3,
-      title: "Rotational Dynamics Set",
-      subject: "Physics",
-      dueDate: "18 Oct 2026, 03:00 PM",
-      status: "Upcoming",
-      badgeColor: "#FFEDD5",
-      badgeText: "#C2410C",
-      description: "Moment of inertia derivation drills for non-symmetric bodies using parallel and perpendicular axis theorems.",
-      progress: 15
+  // Notes & Folders State
+  const [folders, setFolders] = useState(() => {
+    try {
+      const s = localStorage.getItem('gnosis_folders_v3');
+      return s ? JSON.parse(s) : INITIAL_FOLDERS;
+    } catch {
+      return INITIAL_FOLDERS;
     }
-  ]);
-
-  const [fullscreenGraph, setFullscreenGraph] = useState(null);
-
-  const [customAccent, setCustomAccent] = useState(() => {
-    return localStorage.getItem('gnosis_custom_accent') || '#2E285C';
   });
 
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [rgbValues, setRgbValues] = useState({ r: 46, g: 40, b: 92 });
-  const [hexInput, setHexInput] = useState('2E285C');
-  const [hue, setHue] = useState(247);
-  const [crosshairPos, setCrosshairPos] = useState({ x: 190, y: 40 });
+  const [notes, setNotes] = useState(() => {
+    try {
+      const s = localStorage.getItem('gnosis_notes_v3');
+      return s ? JSON.parse(s) : INITIAL_NOTES;
+    } catch {
+      return INITIAL_NOTES;
+    }
+  });
 
-  const spectrumCanvasRef = useRef(null);
-  const hueStripRef = useRef(null);
-
-  const BASE_URL = import.meta.env.BASE_URL;
-  const HERO_IMAGE = `${BASE_URL}hero-bg.png`;
-
-  const updatePersistentColor = (colorHex) => {
-    setCustomAccent(colorHex);
-    localStorage.setItem('gnosis_custom_accent', colorHex);
-  };
-
-  const openStandaloneTool = (toolKey) => {
-    const baseUrl = window.location.href.split('?')[0].split('#')[0];
-    const targetUrl = `${baseUrl}?page=${toolKey}#${toolKey}`;
-    window.open(targetUrl, '_blank');
-  };
-
-  const navItems = [
-    { id: 'Home', iconFile: 'home-icon.png', label: 'Home', route: 'home', standalone: false },
-    { id: 'Overview', iconFile: 'dashboard-icon.png', label: 'Dashboard', route: 'dashboard', standalone: false },
-    { id: 'Notes', iconFile: 'notes-icon.png', label: 'Keep Notes', route: 'notes', standalone: false },
-    { id: 'Quiz', iconFile: 'quiz-icon.png', label: 'Live Quiz', route: 'quiz', standalone: false },
-    { id: 'Analytics', iconFile: 'analytics-icon.png', label: 'Mock Drills', route: 'mock-test', standalone: true, toolKey: 'mock-test' },
-    { id: 'NCERT', iconFile: 'ncert-icon.png', label: 'NCERT Hub', route: 'ncert', standalone: true, toolKey: 'ncert' },
-    { id: 'Socratic', iconFile: 'socratic-icon.png', label: 'Socratic AI', route: 'socratic', standalone: true, toolKey: 'socratic' },
-    { id: 'Player', iconFile: 'player-icon.png', label: 'Video Tunnel', route: 'player', standalone: false },
-    { id: 'Settings', iconFile: 'setting-icon.png', label: 'Settings', route: 'settings', standalone: false },
-  ];
-
-  const [selectedDay, setSelectedDay] = useState(17);
-  const activeMonthDays = [1, 2, 4, 5, 8, 9, 10, 12, 14, 15, 16, 17];
-  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const calendarDays = Array.from({ length: 31 }, (_, i) => i + 1);
-
-  const [secondsSpent, setSecondsSpent] = useState(16338);
   useEffect(() => {
-    const timer = setInterval(() => setSecondsSpent((p) => p + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    localStorage.setItem('gnosis_folders_v3', JSON.stringify(folders));
+  }, [folders]);
 
-  const formatTimer = (totalSeconds) => {
-    const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-    const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-    const secs = String(totalSeconds % 60).padStart(2, '0');
+  useEffect(() => {
+    localStorage.setItem('gnosis_notes_v3', JSON.stringify(notes));
+  }, [notes]);
+
+  const [activeFolderId, setActiveFolderId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
+
+  // Note Modal Fields
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteSubject, setNoteSubject] = useState('Physics');
+  const [noteChapter, setNoteChapter] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [noteFont, setNoteFont] = useState('var(--font-body)');
+  const [noteColor, setNoteColor] = useState('yellow');
+  const [noteFolderId, setNoteFolderId] = useState('f-1');
+
+  // Folder Modal Fields
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderSubject, setNewFolderSubject] = useState('Physics');
+  const [newFolderColor, setNewFolderColor] = useState('mint');
+
+  const baseUrl = import.meta.env.BASE_URL || '/';
+
+  useEffect(() => {
+    let timer = null;
+    if (isTrackerRunning) {
+      timer = setInterval(() => setTrackerSeconds((s) => s + 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isTrackerRunning]);
+
+  const formatTimer = (total) => {
+    const hrs = String(Math.floor(total / 3600)).padStart(2, '0');
+    const mins = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+    const secs = String(total % 60).padStart(2, '0');
     return `${hrs}:${mins}:${secs}`;
   };
 
-  const activeData = SUBJECT_METRICS[activeFilter] || SUBJECT_METRICS.Physics;
-
-  useEffect(() => {
-    if (!showColorPicker || !spectrumCanvasRef.current) return;
-    const canvas = spectrumCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
-
-    const horizGrad = ctx.createLinearGradient(0, 0, w, 0);
-    horizGrad.addColorStop(0, '#FFFFFF');
-    horizGrad.addColorStop(1, `hsl(${hue}, 100%, 50%)`);
-    ctx.fillStyle = horizGrad;
-    ctx.fillRect(0, 0, w, h);
-
-    const vertGrad = ctx.createLinearGradient(0, 0, 0, h);
-    vertGrad.addColorStop(0, 'rgba(0,0,0,0)');
-    vertGrad.addColorStop(1, '#000000');
-    ctx.fillStyle = vertGrad;
-    ctx.fillRect(0, 0, w, h);
-  }, [showColorPicker, hue]);
-
-  const handleSpectrumClick = (e) => {
-    const canvas = spectrumCanvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.max(0, Math.min(canvas.width - 1, e.clientX - rect.left));
-    const y = Math.max(0, Math.min(canvas.height - 1, e.clientY - rect.top));
-
-    setCrosshairPos({ x, y });
-    const ctx = canvas.getContext('2d');
-    const pixel = ctx.getImageData(x, y, 1, 1).data;
-    const nextRgb = { r: pixel[0], g: pixel[1], b: pixel[2] };
-    const nextHex = ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1).toUpperCase();
-
-    setRgbValues(nextRgb);
-    setHexInput(nextHex);
-    updatePersistentColor(`#${nextHex}`);
+  const openNcertTab = () => {
+    const origin = window.location.href.split('?')[0].split('#')[0];
+    window.open(`${origin}?page=ncert#ncert`, '_blank');
   };
 
-  const handleHueClick = (e) => {
-    const rect = hueStripRef.current.getBoundingClientRect();
-    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-    const nextHue = Math.round((y / rect.height) * 360);
-    setHue(nextHue);
+  const handleAddBooklet = () => {
+    const name = window.prompt('Enter new subject / booklet title:');
+    if (name && name.trim()) {
+      const newSub = { id: `booklet_${Date.now()}`, name: name.trim() };
+      setSubjects(prev => [...prev, newSub]);
+      setSelectedSubject(newSub.id);
+    }
+  };
 
+  const openNewNoteModal = () => {
+    setEditingNote(null);
+    setNoteTitle('');
+    setNoteSubject('Physics');
+    setNoteChapter('');
+    setNoteContent('');
+    setNoteFont('var(--font-body)');
+    setNoteColor('yellow');
+    setNoteFolderId(activeFolderId || 'f-1');
+    setIsNoteModalOpen(true);
+  };
+
+  const openEditNote = (note) => {
+    setEditingNote(note);
+    setNoteTitle(note.title);
+    setNoteSubject(note.subject || 'Physics');
+    setNoteChapter(note.chapter || '');
+    setNoteContent(note.content || '');
+    setNoteFont(note.font || 'var(--font-body)');
+    setNoteColor(note.color || 'yellow');
+    setNoteFolderId(note.folderId || 'f-1');
+    setIsNoteModalOpen(true);
+  };
+
+  const insertFormatting = (prefix, suffix = '') => {
+    const textarea = document.getElementById('note-editor-box');
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const sel = noteContent.substring(start, end);
+    const updated = noteContent.substring(0, start) + prefix + (sel || 'text') + suffix + noteContent.substring(end);
+    setNoteContent(updated);
     setTimeout(() => {
-      if (spectrumCanvasRef.current) {
-        const ctx = spectrumCanvasRef.current.getContext('2d');
-        const pixel = ctx.getImageData(crosshairPos.x, crosshairPos.y, 1, 1).data;
-        const nextRgb = { r: pixel[0], g: pixel[1], b: pixel[2] };
-        const nextHex = ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1).toUpperCase();
-        setRgbValues(nextRgb);
-        setHexInput(nextHex);
-        updatePersistentColor(`#${nextHex}`);
-      }
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, end + prefix.length + (sel ? 0 : 4));
     }, 10);
   };
 
-  const itemHeight = 60;
-  const capsuleHeight = 48;
-  const filletRadius = 18;
-  const capsuleOffsetTop = activeNavIndex * itemHeight + (itemHeight - capsuleHeight) / 2;
+  const handleSaveNote = (e) => {
+    e.preventDefault();
+    if (!noteTitle.trim()) return;
+
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+    const timeStr = `${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, ${now.toLocaleDateString([], { weekday: 'long' })}`;
+
+    if (editingNote) {
+      setNotes(prev => prev.map(n => n.id === editingNote.id ? {
+        ...n,
+        title: noteTitle.trim(),
+        subject: noteSubject,
+        chapter: noteChapter.trim(),
+        content: noteContent.trim(),
+        font: noteFont,
+        color: noteColor,
+        folderId: noteFolderId
+      } : n));
+    } else {
+      const newN = {
+        id: `note_${Date.now()}`,
+        folderId: noteFolderId,
+        title: noteTitle.trim(),
+        subject: noteSubject,
+        chapter: noteChapter.trim(),
+        font: noteFont,
+        color: noteColor,
+        date: dateStr,
+        time: timeStr,
+        content: noteContent.trim()
+      };
+      setNotes(prev => [newN, ...prev]);
+    }
+    setIsNoteModalOpen(false);
+  };
+
+  const handleCreateFolder = (e) => {
+    e.preventDefault();
+    if (!newFolderName.trim()) return;
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+    const newF = {
+      id: `f_${Date.now()}`,
+      name: newFolderName.trim(),
+      subject: newFolderSubject,
+      color: newFolderColor,
+      date: dateStr,
+      pdfTitle: `${newFolderName.trim()} High-Yield Notes (PDF)`
+    };
+    setFolders(prev => [...prev, newF]);
+    setNewFolderName('');
+    setIsFolderModalOpen(false);
+  };
+
+  const currentFolder = folders.find(f => f.id === activeFolderId);
+  const displayedNotes = notes.filter(n => {
+    const matchesSearch = (
+      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (n.chapter && n.chapter.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (n.subject && n.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      n.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    if (activeFolderId) return matchesSearch && n.folderId === activeFolderId;
+    return matchesSearch;
+  });
+
+  const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  const texturedButtonStyle = {
+    background: 'linear-gradient(180deg, #1d6a3b 0%, #14532d 100%)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 14px rgba(20, 83, 45, 0.28)',
+    color: '#ffffff',
+    border: 'none',
+    cursor: 'pointer'
+  };
 
   return (
-    <div style={{
+    <div style={{ 
+      backgroundColor: '#e9ede9', 
       width: '100vw',
-      height: '100vh',
-      margin: 0,
-      padding: 0,
-      backgroundColor: customAccent,
-      backgroundImage: `radial-gradient(at 0% 0%, rgba(255,255,255,0.14) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(0,0,0,0.22) 0px, transparent 60%)`,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      color: '#0F172A',
-      display: 'flex',
+      minHeight: '100vh',
+      padding: '16px 18px', 
+      margin: '0',
+      display: 'flex', 
       flexDirection: 'row',
-      alignItems: 'center',
-      overflow: 'hidden',
+      gap: '18px',
       boxSizing: 'border-box',
-      transition: 'background-color 0.3s ease'
+      overflowX: 'hidden'
     }}>
-      {/* ================= 1. LEFT PANEL (84px RESTORED) ================= */}
-      {!isTunnelFullScreen && (
-        <aside
-          onMouseEnter={() => setLeftPanelExpanded(true)}
-          onMouseLeave={() => setLeftPanelExpanded(false)}
-          style={{
-            width: leftPanelExpanded ? '230px' : '84px',
-            height: '100%',
-            transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            justifyContent: 'space-between',
-            padding: '20px 0',
-            flexShrink: 0,
-            userSelect: 'none',
-            boxSizing: 'border-box',
-            position: 'relative',
-            zIndex: 40
-          }}
-        >
-          {/* Brand Header */}
-          <div style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: leftPanelExpanded ? 'flex-start' : 'center',
-            paddingLeft: leftPanelExpanded ? '22px' : '0',
-            marginBottom: '16px',
-            boxSizing: 'border-box'
-          }}>
-            <div 
-              onClick={() => {
-                setCurrentView('dashboard');
-                if (onNavigate) onNavigate('home');
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
-            >
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '12px',
-                backgroundColor: 'rgba(255, 255, 255, 0.16)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <img 
-                  src={`${BASE_URL}gnosis.png`} 
-                  alt=""
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                  style={{ width: '24px', height: '24px', objectFit: 'contain' }}
-                />
+      
+      {/* ================= 1. SIDEBAR ================= */}
+      {isSidebarOpen ? (
+        <aside style={{ 
+          width: '240px', 
+          flexShrink: 0, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'space-between',
+          backgroundColor: '#ffffff', 
+          borderRadius: '28px',
+          border: '1px solid rgba(0,0,0,0.04)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
+          padding: '22px 16px',
+          boxSizing: 'border-box',
+          minHeight: 'calc(100vh - 32px)',
+          transition: 'all 0.25s ease'
+        }}>
+          <div>
+            {/* Top Brand Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', marginBottom: '24px' }}>
+              <div 
+                onClick={() => { setActiveView('dashboard'); onNavigate && onNavigate('home'); }} 
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '14px',
+                  backgroundColor: 'var(--emerald-800)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 6px 14px rgba(20, 83, 45, 0.25)'
+                }}>
+                  <GraduationCap size={22} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '20px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', letterSpacing: '-0.5px' }}>
+                    Gnosis
+                  </span>
+                  <span style={{ fontSize: '10px', fontWeight: 800, backgroundColor: '#eef9f2', color: '#14532d', padding: '2px 7px', borderRadius: '9999px' }}>
+                    EDU
+                  </span>
+                </div>
               </div>
 
-              {leftPanelExpanded && (
-                <span style={{ fontSize: '16px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>
-                  Gnosis
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Navigation with Half-Cut Capsule + Overlap Bleed */}
-          <div style={{ position: 'relative', width: '100%' }}>
-            {/* Top Fillet */}
-            <div style={{
-              position: 'absolute',
-              right: '-1px',
-              top: `${capsuleOffsetTop - filletRadius + 1}px`,
-              width: `${filletRadius + 2}px`,
-              height: `${filletRadius}px`,
-              transition: 'top 0.32s cubic-bezier(0.34, 1.35, 0.64, 1)',
-              pointerEvents: 'none',
-              zIndex: 15
-            }}>
-              <svg width={filletRadius + 2} height={filletRadius} viewBox={`0 0 ${filletRadius + 2} ${filletRadius}`} fill="none">
-                <path
-                  d={`M 0 ${filletRadius} C ${filletRadius * 0.55} ${filletRadius}, ${filletRadius * 0.45}, ${filletRadius} 0 L ${filletRadius + 2} 0 L ${filletRadius + 2} ${filletRadius} Z`}
-                  fill="#F8FAFC"
-                />
-              </svg>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                title="Collapse sidebar"
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '10px',
+                  backgroundColor: '#f5f5f1',
+                  border: 'none',
+                  color: '#71717a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <PanelLeftClose size={16} />
+              </button>
             </div>
 
-            {/* Half-Cut White Capsule */}
-            <div style={{
-              position: 'absolute',
-              right: '-2px',
-              left: leftPanelExpanded ? '14px' : '10px',
-              top: `${capsuleOffsetTop}px`,
-              height: `${capsuleHeight}px`,
-              borderTopLeftRadius: '9999px',
-              borderBottomLeftRadius: '9999px',
-              borderTopRightRadius: '0px',
-              borderBottomRightRadius: '0px',
-              backgroundColor: '#F8FAFC',
-              transition: 'top 0.32s cubic-bezier(0.34, 1.35, 0.64, 1), left 0.25s ease',
-              pointerEvents: 'none',
-              zIndex: 10
-            }} />
-
-            {/* Bottom Fillet */}
-            <div style={{
-              position: 'absolute',
-              right: '-1px',
-              top: `${capsuleOffsetTop + capsuleHeight - 1}px`,
-              width: `${filletRadius + 2}px`,
-              height: `${filletRadius + 2}px`,
-              transition: 'top 0.32s cubic-bezier(0.34, 1.35, 0.64, 1)',
-              pointerEvents: 'none',
-              zIndex: 15
-            }}>
-              <svg width={filletRadius + 2} height={filletRadius + 2} viewBox={`0 0 ${filletRadius + 2} ${filletRadius + 2}`} fill="none">
-                <path
-                  d={`M ${filletRadius + 2} 0 L 0 0 C ${filletRadius * 0.55} 0, ${filletRadius} ${filletRadius * 0.45}, ${filletRadius} ${filletRadius} L ${filletRadius + 2} ${filletRadius} Z`}
-                  fill="#F8FAFC"
-                />
-              </svg>
-            </div>
-
-            {navItems.map((item, idx) => {
-              const isActive = activeNavIndex === idx;
-              const isHovered = hoveredNavIndex === idx;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveNavIndex(idx);
-
-                    if (item.route === 'notes') {
-                      setCurrentView('notes');
-                      return;
-                    }
-                    if (item.route === 'quiz') {
-                      setCurrentView('quiz');
-                      return;
-                    }
-                    if (item.route === 'player') {
-                      setCurrentView('player');
-                      return;
-                    }
-                    if (item.route === 'dashboard') {
-                      setCurrentView('dashboard');
-                      return;
-                    }
-
-                    if (item.standalone && item.toolKey) {
-                      openStandaloneTool(item.toolKey);
-                      return;
-                    }
-
-                    if (onNavigate && item.route !== 'dashboard') {
-                      onNavigate(item.route);
-                    }
-                  }}
-                  onMouseEnter={() => setHoveredNavIndex(idx)}
-                  onMouseLeave={() => setHoveredNavIndex(null)}
+            {/* Menu Links */}
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#a1a1aa', padding: '0 8px', marginBottom: '8px' }}>
+                Menu
+              </p>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <button 
+                  onClick={() => { setActiveView('dashboard'); setActiveFolderId(null); }}
                   style={{
                     width: '100%',
-                    height: `${itemHeight}px`,
-                    border: 'none',
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: leftPanelExpanded ? 'flex-start' : 'center',
-                    padding: leftPanelExpanded ? '0 0 0 24px' : '0',
-                    gap: '14px',
-                    backgroundColor: 'transparent',
-                    color: isActive ? customAccent : (isHovered ? '#FFFFFF' : 'rgba(255, 255, 255, 0.75)'),
-                    transition: 'color 0.2s ease',
-                    position: 'relative',
-                    zIndex: 25
+                    gap: '12px',
+                    padding: '11px 14px',
+                    borderRadius: '16px',
+                    backgroundColor: activeView === 'dashboard' ? '#f5f5f1' : 'transparent',
+                    color: activeView === 'dashboard' ? '#14532d' : '#52525b',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    cursor: 'pointer'
                   }}
                 >
-                  <span style={{
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transform: isHovered && !isActive ? 'scale(1.15)' : 'none',
-                    transition: 'transform 0.2s',
-                    flexShrink: 0
-                  }}>
-                    <img 
-                      src={`${BASE_URL}${item.iconFile}`} 
-                      alt=""
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        objectFit: 'contain',
-                        filter: isActive ? 'none' : 'brightness(0) invert(1)'
-                      }}
-                    />
-                  </span>
-                  {leftPanelExpanded && (
-                    <span style={{ fontSize: '13.5px', fontWeight: isActive ? 800 : 600, whiteSpace: 'nowrap' }}>
-                      {item.label}
-                    </span>
+                  <LayoutGrid size={18} color={activeView === 'dashboard' ? '#15803d' : '#a1a1aa'} />
+                  <span>Dashboard</span>
+                  {activeView === 'dashboard' && (
+                    <span style={{ marginLeft: 'auto', width: '5px', height: '18px', borderRadius: '9999px', backgroundColor: '#15803d' }}></span>
                   )}
                 </button>
-              );
-            })}
+
+                <button 
+                  onClick={() => { setActiveView('notes'); setActiveFolderId(null); }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '11px 14px',
+                    borderRadius: '16px',
+                    backgroundColor: activeView === 'notes' ? '#f5f5f1' : 'transparent',
+                    color: activeView === 'notes' ? '#14532d' : '#52525b',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <FileEdit size={18} color={activeView === 'notes' ? '#15803d' : '#a1a1aa'} />
+                  <span>Keep notes</span>
+                  <span className="num-bold" style={{ marginLeft: 'auto', fontSize: '11px', backgroundColor: '#eef9f2', color: '#14532d', padding: '2px 8px', borderRadius: '9999px' }}>
+                    {notes.length}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveView('quiz')}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '11px 14px',
+                    borderRadius: '16px',
+                    backgroundColor: activeView === 'quiz' ? '#f5f5f1' : 'transparent',
+                    color: activeView === 'quiz' ? '#14532d' : '#52525b',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <HelpCircle size={18} color={activeView === 'quiz' ? '#15803d' : '#a1a1aa'} />
+                  <span>Live Quiz</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveView('socratic')}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '11px 14px',
+                    borderRadius: '16px',
+                    backgroundColor: activeView === 'socratic' ? '#f5f5f1' : 'transparent',
+                    color: activeView === 'socratic' ? '#14532d' : '#52525b',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <BrainCircuit size={18} color={activeView === 'socratic' ? '#15803d' : '#a1a1aa'} />
+                  <span>Socratic AI</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 800, backgroundColor: 'var(--emerald-800)', color: '#ffffff', padding: '2px 7px', borderRadius: '9999px' }}>PRO</span>
+                </button>
+              </nav>
+            </div>
+
+            {/* General Section */}
+            <div style={{ marginTop: '54px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#a1a1aa', padding: '0 8px', marginBottom: '8px' }}>
+                General
+              </p>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <button 
+                  onClick={() => setActiveView('profile')}
+                  style={{ 
+                    width: '100%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px', 
+                    padding: '10px 14px', 
+                    borderRadius: '16px', 
+                    backgroundColor: activeView === 'profile' ? '#f5f5f1' : 'transparent', 
+                    color: activeView === 'profile' ? '#14532d' : '#52525b', 
+                    border: 'none', 
+                    fontWeight: 600, 
+                    fontSize: '13px', 
+                    textAlign: 'left', 
+                    cursor: 'pointer' 
+                  }}
+                >
+                  <User size={18} color={activeView === 'profile' ? '#14532d' : '#a1a1aa'} />
+                  <span>Profile</span>
+                </button>
+
+                <button 
+                  onClick={openNcertTab}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '16px', backgroundColor: 'transparent', color: '#52525b', border: 'none', fontWeight: 500, fontSize: '13px', textAlign: 'left', cursor: 'pointer' }}
+                >
+                  <BookOpen size={18} color="#a1a1aa" />
+                  <span>NCERT Hub</span>
+                  <ArrowUpRight size={14} color="#a1a1aa" style={{ marginLeft: 'auto' }} />
+                </button>
+
+                <button 
+                  onClick={() => setActiveView('player')}
+                  style={{ 
+                    width: '100%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px', 
+                    padding: '10px 14px', 
+                    borderRadius: '16px', 
+                    backgroundColor: activeView === 'player' ? '#f5f5f1' : 'transparent', 
+                    color: activeView === 'player' ? '#14532d' : '#52525b', 
+                    border: 'none', 
+                    fontWeight: 500, 
+                    fontSize: '13px', 
+                    textAlign: 'left', 
+                    cursor: 'pointer' 
+                  }}
+                >
+                  <PlaySquare size={18} color="#a1a1aa" />
+                  <span>Videos</span>
+                </button>
+
+                <button 
+                  onClick={() => onNavigate && onNavigate('home')}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '16px', backgroundColor: 'transparent', color: '#52525b', border: 'none', fontWeight: 500, fontSize: '13px', textAlign: 'left', cursor: 'pointer' }}
+                >
+                  <LogOut size={18} color="#a1a1aa" />
+                  <span>Logout</span>
+                </button>
+              </nav>
+            </div>
           </div>
 
-          {/* Exit Button */}
-          <div style={{ width: '100%', display: 'flex', justifyContent: leftPanelExpanded ? 'flex-start' : 'center', paddingLeft: leftPanelExpanded ? '20px' : '0' }}>
-            <button 
-              onClick={() => onNavigate && onNavigate('home')}
-              title="Exit Portal"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                border: 'none',
-                color: '#FFFFFF',
-                borderRadius: '10px',
-                padding: leftPanelExpanded ? '8px 16px' : '10px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 700
-              }}
-            >
-              <span>[←]</span>
-              {leftPanelExpanded && <span>Exit App</span>}
+          {/* Download App Bottom Card */}
+          <div style={{
+            color: '#ffffff',
+            padding: '18px',
+            borderRadius: '24px',
+            backgroundImage: `url('${baseUrl}green001.jpg'), url('${baseUrl}green001.png')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundColor: '#14532d',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '20px'
+          }}>
+            <div style={{ width: '30px', height: '30px', borderRadius: '10px', backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Smartphone size={17} color="#ffffff" />
+            </div>
+            <h4 style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'var(--font-heading)', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>Download our Mobile App</h4>
+            <p style={{ fontSize: '11px', color: '#f1f5f9', lineHeight: 1.35, margin: 0, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>Practice PYQs anywhere and anytime.</p>
+            <button style={{
+              marginTop: '4px',
+              width: '100%',
+              padding: '9px',
+              borderRadius: '12px',
+              backgroundColor: '#ffffff',
+              color: '#0d381e',
+              border: 'none',
+              fontWeight: 800,
+              fontSize: '11.5px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              cursor: 'pointer'
+            }}>
+              Download
             </button>
           </div>
         </aside>
+      ) : (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          title="Open sidebar"
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '20px',
+            zIndex: 40,
+            width: '40px',
+            height: '40px',
+            borderRadius: '14px',
+            backgroundColor: '#ffffff',
+            border: 'none',
+            color: '#18181b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.08)'
+          }}
+        >
+          <PanelLeftOpen size={18} />
+        </button>
       )}
 
-      {/* ================= 2. MAIN INNER CANVAS (RESTORED TOP/RIGHT/BOTTOM MARGINS) ================= */}
+      {/* ================= 2. MAIN VIEW AREA ================= */}
       <div style={{
         flex: 1,
-        height: isTunnelFullScreen ? '100vh' : 'calc(100vh - 28px)',
-        margin: isTunnelFullScreen ? '0' : '14px 14px 14px 0',
-        backgroundColor: '#F8FAFC',
-        borderRadius: isTunnelFullScreen ? '0px' : '32px',
-        boxShadow: isTunnelFullScreen ? 'none' : '-10px 0 35px -5px rgba(0, 0, 0, 0.16), 0 10px 30px rgba(0, 0, 0, 0.12), inset 1px 1px 0 rgba(255, 255, 255, 0.8)',
-        padding: isTunnelFullScreen ? '0px' : '26px 30px',
         display: 'flex',
-        gap: '20px',
-        boxSizing: 'border-box',
-        overflow: 'hidden'
+        flexDirection: 'column',
+        gap: '16px',
+        minWidth: 0,
+        boxSizing: 'border-box'
       }}>
-        {/* VIEW SWITCHER: KEEP NOTES */}
-        {currentView === 'notes' && (
-          <div style={{ flex: 1, height: '100%', overflow: 'hidden' }}>
-            <KeepNotes />
-          </div>
-        )}
+        
+        {/* UNIVERSAL TOP HEADER */}
+        <header style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '26px',
+          border: '1px solid rgba(0,0,0,0.04)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
+          padding: '12px 22px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          boxSizing: 'border-box',
+          width: '100%'
+        }}>
+          <h1 style={{ 
+            fontSize: '24px', 
+            fontWeight: 900, 
+            fontFamily: 'var(--font-heading)', 
+            color: '#18181b', 
+            letterSpacing: '-0.5px', 
+            margin: 0,
+            flexShrink: 0
+          }}>
+            {activeView === 'dashboard' ? 'Dashboard' : activeView === 'notes' ? (activeFolderId ? currentFolder?.name : 'Keep Notes') : activeView === 'quiz' ? 'Live Quiz' : activeView === 'socratic' ? 'Socratic AI' : activeView === 'profile' ? 'Candidate Profile' : 'Video Tunnel'}
+          </h1>
 
-        {/* VIEW SWITCHER: LIVE QUIZ */}
-        {currentView === 'quiz' && (
-          <div style={{ flex: 1, height: '100%', overflow: 'hidden' }}>
-            <QuizView onBack={() => setCurrentView('dashboard')} />
-          </div>
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ position: 'relative', width: '280px', display: 'flex', alignItems: 'center' }}>
+              <Search size={16} color="#18181b" style={{ position: 'absolute', left: '16px', pointerEvents: 'none' }} />
+              <input 
+                type="text" 
+                placeholder={activeView === 'notes' ? "Search notes or formulas..." : "Search task..."}
+                value={activeView === 'notes' ? searchQuery : ''}
+                onChange={e => activeView === 'notes' && setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 18px 9px 42px',
+                  backgroundColor: '#f5f5f1',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  outline: 'none',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  color: '#18181b'
+                }}
+              />
+            </div>
 
-        {/* VIEW SWITCHER: VIDEO TUNNEL */}
-        {currentView === 'player' && (
-          <div style={{ flex: 1, height: '100%', overflow: 'hidden' }}>
-            <VideoTunnel 
-              isFullScreen={isTunnelFullScreen}
-              onToggleFullScreen={() => setIsTunnelFullScreen((prev) => !prev)}
-              onBack={() => {
-                setIsTunnelFullScreen(false);
-                setCurrentView('dashboard');
-              }} 
+            <button style={{ 
+              width: '38px', 
+              height: '38px', 
+              borderRadius: '50%', 
+              backgroundColor: '#f5f5f1', 
+              border: 'none', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              color: '#18181b', 
+              cursor: 'pointer', 
+              position: 'relative'
+            }}>
+              <Bell size={17} />
+              <span style={{ 
+                position: 'absolute', 
+                top: '8px', 
+                right: '8px', 
+                width: '6px', 
+                height: '6px', 
+                borderRadius: '50%', 
+                backgroundColor: '#ef4444' 
+              }}></span>
+            </button>
+
+            <img 
+              onClick={() => setActiveView('profile')}
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
+              alt="User Profile" 
+              title="View Profile"
+              style={{ 
+                width: '38px', 
+                height: '38px', 
+                borderRadius: '50%', 
+                objectFit: 'cover',
+                border: '2px solid #ffffff',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                cursor: 'pointer'
+              }}
             />
           </div>
-        )}
+        </header>
 
-        {/* VIEW SWITCHER: DEFAULT DASHBOARD OVERVIEW */}
-        {currentView === 'dashboard' && (
-          <>
-            <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingRight: '4px' }}>
-              {/* Top Bar with Live Subject Switchers */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-                  <span style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.5px' }}>
-                    Candidate Learning Dashboard
-                  </span>
-                  <div style={{ display: 'flex', gap: '6px', backgroundColor: '#EDF2F7', padding: '3px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700 }}>
-                    {['Physics', 'Chemistry', 'Mathematics'].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setActiveFilter(s)}
-                        style={{
-                          border: 'none',
-                          padding: '5px 14px',
-                          borderRadius: '9999px',
-                          cursor: 'pointer',
-                          backgroundColor: activeFilter === s ? customAccent : 'transparent',
-                          color: activeFilter === s ? '#FFF' : '#64748B',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Session Timer & RainRGB Trigger */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '9999px',
-                    padding: '6px 14px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#475569'
-                  }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981' }} />
-                    <span>Daily Study:</span>
-                    <span style={{ fontFamily: 'monospace', color: '#0F172A' }}>{formatTimer(secondsSpent)}</span>
-                  </div>
-
-                  <button
-                    onClick={() => setShowColorPicker(true)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                      backdropFilter: 'blur(14px)',
-                      border: '1px solid rgba(255, 255, 255, 0.8)',
-                      boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02)',
-                      borderRadius: '9999px',
-                      padding: '6px 14px',
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      fontSize: '11px',
-                      color: '#0F172A'
-                    }}
-                  >
-                    <span style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: customAccent, border: '1px solid #888' }} />
-                    RainRGB Theme
-                  </button>
-                </div>
-              </div>
-
-              {/* Dynamic Graphs Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr 1fr', gap: '16px' }}>
-                {/* Target Card */}
-                <div style={{
-                  background: `linear-gradient(135deg, ${customAccent}EE 0%, ${customAccent} 100%)`,
-                  borderRadius: '22px',
-                  padding: '20px',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  position: 'relative',
-                  boxShadow: `0 14px 28px -6px ${customAccent}55, 0 8px 12px -4px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.25)`,
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'background-color 0.3s ease'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontSize: '11px', fontWeight: 800, opacity: 0.9 }}>DAILY SOLVE QUOTA</div>
-                      <div style={{ fontSize: '10px', opacity: 0.75 }}>JEE Pacing Standard</div>
-                    </div>
-                    <button 
-                      onClick={() => setFullscreenGraph('goal')}
-                      title="Fullscreen"
-                      style={{ background: 'rgba(255,255,255,0.22)', border: 'none', borderRadius: '50%', width: '26px', height: '26px', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}
-                    >
-                      [+]
-                    </button>
-                  </div>
-
-                  <div style={{ margin: '10px 0' }}>
-                    <div style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.5px' }}>
-                      {activeData.quotaText}
-                    </div>
-                    <div style={{ fontSize: '11px', opacity: 0.85 }}>Questions Mastered Today</div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10.5px', fontWeight: 700 }}>
-                    <span>{activeData.quotaTopic}</span>
-                    <span style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '6px' }}>{activeFilter}</span>
-                  </div>
-                </div>
-
-                {/* Engagement Rate Bars with dynamic data */}
-                <div style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.88)',
-                  backdropFilter: 'blur(14px)',
-                  borderRadius: '22px',
-                  padding: '18px 20px',
-                  border: '1px solid rgba(255, 255, 255, 0.8)',
-                  boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  position: 'relative'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>Engagement Rate</span>
-                      <span style={{ fontSize: '10.5px', color: '#64748B', display: 'block' }}>Monthly {activeFilter} accuracy distribution</span>
-                    </div>
-                    <button 
-                      onClick={() => setFullscreenGraph('engagement')}
-                      title="Fullscreen"
-                      style={{ background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', fontSize: '11px', fontWeight: 800 }}
-                    >
-                      [+]
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '105px', padding: '8px 4px 0 4px' }}>
-                    {activeData.bars.map((bar, i) => (
-                      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', flex: 1 }}>
-                        <div style={{
-                          width: '32px',
-                          height: `${bar.val}%`,
-                          borderRadius: '9999px',
-                          backgroundColor: bar.highlight ? customAccent : `${customAccent}40`,
-                          backgroundImage: bar.highlight ? 'none' : `repeating-linear-gradient(45deg, ${customAccent}20, ${customAccent}20 3px, transparent 3px, transparent 6px)`,
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          justifyContent: 'center',
-                          paddingTop: '6px',
-                          boxSizing: 'border-box',
-                          transition: 'height 0.4s ease, background-color 0.3s'
-                        }}>
-                          {bar.highlight && <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#FFF' }}>+17%</span>}
-                        </div>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748B' }}>{bar.month}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Wave Chart */}
-                <div style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.88)',
-                  backdropFilter: 'blur(14px)',
-                  borderRadius: '22px',
-                  padding: '18px 20px',
-                  border: '1px solid rgba(255, 255, 255, 0.8)',
-                  boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>Time Pacing Index</div>
-                      <div style={{ fontSize: '22px', fontWeight: 900, color: '#0F172A', marginTop: '2px' }}>
-                        {activeData.pacingIndex}
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setFullscreenGraph('wave')}
-                      title="Fullscreen"
-                      style={{ background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', fontSize: '11px', fontWeight: 800 }}
-                    >
-                      [+]
-                    </button>
-                  </div>
-
-                  <div style={{ width: '100%', height: '65px', margin: '4px 0' }}>
-                    <svg viewBox="0 0 200 65" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                      <defs>
-                        <linearGradient id="waveG" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={customAccent} stopOpacity="0.35" />
-                          <stop offset="100%" stopColor={customAccent} stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      <path d="M0,45 Q25,10 50,35 T100,20 T150,50 T200,15" fill="none" stroke={customAccent} strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M0,45 Q25,10 50,35 T100,20 T150,50 T200,15 L200,65 L0,65 Z" fill="url(#waveG)" />
-                    </svg>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button 
-                      onClick={() => setCurrentView('quiz')}
-                      style={{ flex: 1, padding: '6px 0', borderRadius: '8px', backgroundColor: customAccent, color: '#FFF', border: 'none', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      Scorecard
-                    </button>
-                    <button 
-                      onClick={() => openStandaloneTool('socratic')}
-                      style={{ flex: 1, padding: '6px 0', borderRadius: '8px', backgroundColor: '#F1F5F9', color: '#475569', border: 'none', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      Socratic AI
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Course You're Taking Section */}
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.88)',
-                backdropFilter: 'blur(14px)',
-                borderRadius: '24px',
-                padding: '22px 24px',
-                border: '1px solid rgba(255, 255, 255, 0.8)',
-                boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', position: 'relative' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                    {activeFilter} Modules You’re Taking
-                  </span>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ position: 'relative' }}>
-                      <div 
-                        onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#475569',
-                          backgroundColor: '#F1F5F9',
-                          padding: '5px 12px',
-                          borderRadius: '9999px',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          transition: 'background-color 0.2s'
-                        }}
-                      >
-                        <span>{courseFilter}</span>
-                        <span style={{
-                          fontSize: '8px',
-                          transition: 'transform 0.25s ease',
-                          transform: isFilterDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                        }}>
-                          ▼
-                        </span>
-                      </div>
-
-                      {isFilterDropdownOpen && (
-                        <div style={{
-                          position: 'absolute',
-                          right: 0,
-                          top: '32px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '14px',
-                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                          border: '1px solid #E2E8F0',
-                          padding: '6px',
-                          zIndex: 50,
-                          minWidth: '110px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '2px'
-                        }}>
-                          {['Active', 'Completed', 'All Modules'].map((option) => (
-                            <button
-                              key={option}
-                              onClick={() => {
-                                setCourseFilter(option);
-                                setIsFilterDropdownOpen(false);
-                              }}
-                              style={{
-                                background: courseFilter === option ? '#F1F5F9' : 'transparent',
-                                border: 'none',
-                                padding: '6px 10px',
-                                textAlign: 'left',
-                                fontSize: '11px',
-                                fontWeight: courseFilter === option ? 800 : 600,
-                                color: '#0F172A',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
+        {/* ================= 3. ACTIVE VIEW CONTENT ================= */}
+        {activeView === 'dashboard' ? (
+          /* ================= MAIN DASHBOARD METRICS ================= */
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '30px',
+            border: '1px solid rgba(0,0,0,0.04)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '18px',
+            boxSizing: 'border-box',
+            width: '100%'
+          }}>
+            {/* Subject Capsules + Date Range */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', padding: '2px 0' }}>
+                {subjects.map((sub) => {
+                  const isActive = sub.id === selectedSubject;
+                  return (
                     <button
-                      onClick={() => setIsAddCourseOpen(!isAddCourseOpen)}
-                      title={isAddCourseOpen ? "Close panel" : "Add/Expand course"}
+                      key={sub.id}
+                      onClick={() => setSelectedSubject(sub.id)}
                       style={{
-                        width: '26px',
-                        height: '26px',
-                        borderRadius: '50%',
-                        backgroundColor: '#A3E635',
-                        color: '#1E293B',
+                        padding: '7px 16px',
+                        borderRadius: '9999px',
                         border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '16px',
-                        fontWeight: 900,
+                        backgroundColor: isActive ? '#18181b' : '#f5f5f1',
+                        color: isActive ? '#ffffff' : '#18181b',
+                        fontSize: '12px',
+                        fontWeight: isActive ? 800 : 700,
+                        fontFamily: 'var(--font-heading)',
+                        whiteSpace: 'nowrap',
                         cursor: 'pointer',
-                        outline: 'none',
-                        boxShadow: '0 2px 8px rgba(163, 230, 53, 0.45)',
-                        transform: isAddCourseOpen ? 'rotate(135deg) scale(1.08)' : 'rotate(0deg) scale(1)',
-                        transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s',
-                        userSelect: 'none'
+                        boxShadow: isActive ? '0 3px 10px rgba(0,0,0,0.18)' : 'none',
+                        transition: 'all 0.15s ease'
                       }}
                     >
-                      +
+                      {sub.name}
                     </button>
-                  </div>
-                </div>
+                  );
+                })}
 
-                {/* Inline Drawer */}
-                <div style={{
-                  maxHeight: isAddCourseOpen ? '220px' : '0px',
-                  opacity: isAddCourseOpen ? 1 : 0,
-                  overflow: 'hidden',
-                  transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-bottom 0.3s ease',
-                  marginBottom: isAddCourseOpen ? '16px' : '0px'
-                }}>
-                  <div style={{
-                    padding: '16px 20px',
-                    backgroundColor: '#F8FAFC',
-                    borderRadius: '18px',
-                    border: `1.5px dashed ${customAccent}55`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A' }}>
-                        Queue a New {activeFilter} Topic
-                      </span>
-                      <span style={{ fontSize: '10px', color: '#64748B' }}>NCERT Class 11 PCM</span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '10px' }}>
-                      <input 
-                        type="text" 
-                        placeholder={`e.g. ${activeFilter}: Advanced Numericals`} 
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: '10px',
-                          border: '1px solid #CBD5E1',
-                          fontSize: '11.5px',
-                          outline: 'none',
-                          backgroundColor: '#FFFFFF'
-                        }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Instructor Name" 
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: '10px',
-                          border: '1px solid #CBD5E1',
-                          fontSize: '11.5px',
-                          outline: 'none',
-                          backgroundColor: '#FFFFFF'
-                        }}
-                      />
-                      <button
-                        onClick={() => setIsAddCourseOpen(false)}
-                        style={{
-                          padding: '8px 18px',
-                          backgroundColor: customAccent,
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          boxShadow: `0 4px 12px ${customAccent}40`
-                        }}
-                      >
-                        Add Module
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Course Items List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {activeData.courses.map((course) => (
-                    <div 
-                      key={course.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '14px 18px',
-                        borderRadius: '18px',
-                        backgroundColor: '#FFFFFF',
-                        border: '1.5px solid #F1F5F9',
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                        cursor: 'pointer'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{
-                          width: '46px',
-                          height: '46px',
-                          borderRadius: '14px',
-                          backgroundColor: course.tagBg,
-                          color: course.tagColor,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '11.5px',
-                          fontWeight: 900
-                        }}>
-                          {course.tag}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>{course.title}</div>
-                          <div style={{ fontSize: '11px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                            <span>Prof.</span> {course.instructor}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-                        <div>
-                          <div style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 600 }}>Remaining</div>
-                          <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>{course.remaining}</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <div style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            border: '3px solid #E2E8F0',
-                            borderTopColor: '#22C55E',
-                            borderRightColor: '#22C55E',
-                            borderBottomColor: course.progress > 50 ? '#22C55E' : 'transparent',
-                            transform: 'rotate(45deg)'
-                          }} />
-                          <span style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>{course.progress}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Assignment Detail View */}
-              {selectedAssignment && (
-                <div style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '24px',
-                  padding: '24px',
-                  border: `2px solid ${customAccent}`,
-                  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.06)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', color: customAccent, backgroundColor: `${customAccent}18`, padding: '3px 10px', borderRadius: '6px' }}>
-                          {selectedAssignment.subject}
-                        </span>
-                        <span style={{ fontSize: '9.5px', fontWeight: 700, backgroundColor: selectedAssignment.badgeColor, color: selectedAssignment.badgeText, padding: '3px 8px', borderRadius: '9999px' }}>
-                          {selectedAssignment.status}
-                        </span>
-                      </div>
-                      <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-                        {selectedAssignment.title}
-                      </h2>
-                      <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-                        Due Date: {selectedAssignment.dueDate}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => setSelectedAssignment(null)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#F1F5F9',
-                        border: 'none',
-                        padding: '6px 14px',
-                        borderRadius: '10px',
-                        fontSize: '11.5px',
-                        fontWeight: 700,
-                        color: '#475569',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Close View
-                    </button>
-                  </div>
-
-                  <div style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '16px', marginBottom: '18px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#475569', marginBottom: '6px' }}>ASSIGNMENT BRIEF</div>
-                    <p style={{ fontSize: '12.5px', color: '#334155', lineHeight: 1.6, margin: 0 }}>
-                      {selectedAssignment.description}
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ width: '130px', height: '8px', backgroundColor: '#E2E8F0', borderRadius: '9999px', overflow: 'hidden' }}>
-                        <div style={{ width: `${selectedAssignment.progress}%`, height: '100%', backgroundColor: customAccent, borderRadius: '9999px' }} />
-                      </div>
-                      <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#0F172A' }}>
-                        {selectedAssignment.progress}% Complete
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button 
-                        onClick={() => openStandaloneTool('ncert')}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#F1F5F9',
-                          color: '#334155',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Open Reference Notes
-                      </button>
-                      <button 
-                        onClick={() => openStandaloneTool('mock-test')}
-                        style={{
-                          padding: '8px 18px',
-                          backgroundColor: customAccent,
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          boxShadow: `0 4px 12px ${customAccent}40`
-                        }}
-                      >
-                        Start Submission Drill
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Performance Drill Log */}
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.88)',
-                backdropFilter: 'blur(14px)',
-                borderRadius: '22px',
-                padding: '18px 22px',
-                border: '1px solid rgba(255, 255, 255, 0.8)',
-                boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
-                    Recent {activeFilter} Mock Drills
-                  </span>
-                  <span 
-                    onClick={() => setCurrentView('quiz')}
-                    style={{ fontSize: '11px', fontWeight: 700, color: customAccent, cursor: 'pointer' }}
-                  >
-                    View All History
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {activeData.drills.map((row, idx) => (
-                    <div key={idx} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      borderRadius: '12px',
-                      backgroundColor: '#F8FAFC',
-                      border: '1px solid #F1F5F9'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: row.score.includes('+') ? customAccent : '#EF4444' }} />
-                        <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>{row.name}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '20px', fontSize: '10.5px', color: '#64748B' }}>
-                        <span>{row.date}</span>
-                        <span>{row.time}</span>
-                        <span style={{ fontWeight: 800, color: row.score.includes('+') ? customAccent : '#EF4444' }}>{row.score}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </main>
-
-            {/* Right Panel */}
-            <aside style={{
-              width: rightPanelOpen ? '320px' : '46px',
-              transition: 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
-              borderLeft: `2px solid ${customAccent}33`,
-              paddingLeft: rightPanelOpen ? '18px' : '0',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              flexShrink: 0,
-              overflow: 'hidden',
-              boxSizing: 'border-box'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: rightPanelOpen ? 'space-between' : 'center', marginBottom: '14px' }}>
-                {rightPanelOpen && (
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>Candidate Schedule</div>
-                )}
-                <button 
-                  onClick={() => setRightPanelOpen(!rightPanelOpen)}
-                  title={rightPanelOpen ? "Shrink panel" : "Expand panel"}
+                <button
+                  onClick={handleAddBooklet}
+                  title="Add New Booklet"
                   style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    border: `1.5px solid ${customAccent}`,
-                    backgroundColor: '#FFFFFF',
-                    color: customAccent,
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '11px',
-                    fontWeight: 800
+                    gap: '4px',
+                    padding: '7px 14px',
+                    borderRadius: '9999px',
+                    backgroundColor: '#ffffff',
+                    border: '1px dashed #14532d',
+                    color: '#14532d',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-heading)',
+                    cursor: 'pointer',
+                    flexShrink: 0
                   }}
                 >
-                  {rightPanelOpen ? '<<' : '>>'}
+                  <Plus size={14} />
+                  <span>Add Booklet</span>
                 </button>
               </div>
 
-              {rightPanelOpen && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
-                  {/* Hero Card */}
-                  <div style={{
-                    position: 'relative',
-                    borderRadius: '22px',
-                    overflow: 'hidden',
-                    padding: '20px',
-                    color: '#FFFFFF',
-                    boxShadow: `0 10px 25px ${customAccent}35`
-                  }}>
-                    <img 
-                      src={HERO_IMAGE} 
-                      alt="" 
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.78)', zIndex: 2 }} />
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '7px 16px',
+                borderRadius: '9999px',
+                backgroundColor: '#f5f5f1',
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#18181b',
+                fontFamily: 'var(--font-heading)'
+              }}>
+                <CalendarIcon size={14} color="#18181b" />
+                <span>1 Sep 2024 - 31 Sep 2024</span>
+              </div>
+            </div>
 
-                    <div style={{ position: 'relative', zIndex: 3 }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.5px', color: '#38BDF8' }}>GNOSIS PRO</div>
-                      <div style={{ fontSize: '19px', fontWeight: 900, margin: '4px 0 6px 0' }}>Go Deeper</div>
-                      <p style={{ fontSize: '11px', color: '#CBD5E1', margin: '0 0 14px 0', lineHeight: 1.5 }}>
-                        Unlock full 15-year Class 11 PYQ sets with Socratic AI stepping.
-                      </p>
-                      <button 
-                        onClick={() => openStandaloneTool('mock-test')}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#A3E635',
-                          color: '#1E293B',
-                          borderRadius: '12px',
-                          border: 'none',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Get Access
-                      </button>
-                    </div>
+            {/* Top 4 Stat Blocks */}
+            <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #14532d 0%, #0d381e 60%, #051f11 100%)',
+                color: '#ffffff',
+                padding: '18px 20px',
+                borderRadius: '24px',
+                boxShadow: '0 10px 24px -4px rgba(20, 83, 45, 0.28)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: '140px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--emerald-100)' }}>Daily PYQ Solved</span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ArrowUpRight size={15} color="#ffffff" />
                   </div>
-
-                  {/* Calendar */}
-                  <div style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '20px',
-                    padding: '16px',
-                    border: `1.5px solid ${customAccent}22`
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                      <span style={{ cursor: 'pointer', color: '#94A3B8', fontSize: '14px' }}>&lt;</span>
-                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>October, 2026</span>
-                      <span style={{ cursor: 'pointer', color: '#94A3B8', fontSize: '14px' }}>&gt;</span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#94A3B8', marginBottom: '6px' }}>
-                      {daysOfWeek.map((d, idx) => <span key={idx}>{d}</span>)}
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px 0', textAlign: 'center', fontSize: '11px', fontWeight: 600, color: '#334155' }}>
-                      {calendarDays.slice(0, 31).map((d) => {
-                        const isSelected = selectedDay === d;
-                        const isUsed = activeMonthDays.includes(d);
-                        return (
-                          <div key={d} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span 
-                              onClick={() => setSelectedDay(d)}
-                              style={{
-                                width: '26px',
-                                height: '26px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: '50%',
-                                backgroundColor: isSelected ? customAccent : (isUsed ? `${customAccent}25` : 'transparent'),
-                                color: isSelected ? '#FFFFFF' : (isUsed ? customAccent : '#334155'),
-                                fontWeight: isSelected || isUsed ? 800 : 500,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                              }}
-                            >
-                              {d}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Assignments List Header & Items */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>Assignments</span>
-                      <button 
-                        onClick={() => setSelectedAssignment({
-                          id: Date.now(),
-                          title: "New Study Assignment",
-                          subject: "Class 11 PCM",
-                          dueDate: "Upcoming",
-                          status: "In progress",
-                          badgeColor: "#EDE9FE",
-                          badgeText: "#6D28D9",
-                          description: "Configure custom homework tasks, NCERT question sets, or test revisions.",
-                          progress: 0
-                        })}
-                        style={{
-                          width: '22px',
-                          height: '22px',
-                          borderRadius: '50%',
-                          backgroundColor: '#A3E635',
-                          color: '#1E293B',
-                          border: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '13px',
-                          fontWeight: 900,
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 6px rgba(163, 230, 53, 0.4)'
-                        }}
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {assignmentsList.map((item) => (
-                        <div 
-                          key={item.id}
-                          onClick={() => setSelectedAssignment(item)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '10px 12px',
-                            backgroundColor: '#FFFFFF',
-                            borderRadius: '14px',
-                            border: '1.5px solid #F1F5F9',
-                            cursor: 'pointer',
-                            transition: 'transform 0.18s ease, border-color 0.18s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.borderColor = customAccent;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0px)';
-                            e.currentTarget.style.borderColor = '#F1F5F9';
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A' }}>{item.title}</div>
-                            <div style={{ fontSize: '9px', color: '#94A3B8', marginTop: '2px' }}>{item.dueDate}</div>
-                          </div>
-                          <span style={{ fontSize: '9px', fontWeight: 700, backgroundColor: item.badgeColor, color: item.badgeText, padding: '2px 8px', borderRadius: '9999px' }}>
-                            {item.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                 </div>
-              )}
-            </aside>
-          </>
-        )}
-      </div>
-
-      {/* ================= 4. FULLSCREEN GRAPH MODAL ================= */}
-      {fullscreenGraph && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 200,
-          padding: '40px'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '1020px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '26px',
-            padding: '28px',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', margin: 0 }}>
-                  High-Resolution Graph Analysis
-                </h2>
-                <p style={{ fontSize: '12px', color: '#64748B', margin: '4px 0 0 0' }}>
-                  Full window inspection of JEE mock test metrics and time traps
-                </p>
+                <div>
+                  <div className="num-bold" style={{ fontSize: '36px', lineHeight: 1, marginBottom: '6px' }}>24</div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, backgroundColor: 'rgba(22, 163, 74, 0.45)', color: '#ffffff', padding: '3px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <ArrowUp size={11} /> <b className="num-bold">5</b> Increased from yesterday
+                  </span>
+                </div>
               </div>
-              <button 
-                onClick={() => setFullscreenGraph(null)}
-                style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', backgroundColor: '#F1F5F9', cursor: 'pointer', fontSize: '14px', fontWeight: 800 }}
-              >
-                X
-              </button>
-            </div>
 
-            <div style={{ width: '100%', height: '380px', backgroundColor: '#F8FAFC', borderRadius: '20px', padding: '24px', boxSizing: 'border-box' }}>
-              <svg viewBox="0 0 800 320" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                <defs>
-                  <linearGradient id="modalG" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={customAccent} stopOpacity="0.4" />
-                    <stop offset="100%" stopColor={customAccent} stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-                <path d="M0,220 Q100,50 200,160 T400,90 T600,240 T800,60" fill="none" stroke={customAccent} strokeWidth="4" strokeLinecap="round" />
-                <path d="M0,220 Q100,50 200,160 T400,90 T600,240 T800,60 L800,320 L0,320 Z" fill="url(#modalG)" />
-                <circle cx="200" cy="160" r="6" fill={customAccent} />
-                <circle cx="400" cy="90" r="6" fill={customAccent} />
-                <circle cx="800" cy="60" r="7" fill="#FFFFFF" stroke={customAccent} strokeWidth="4" />
-              </svg>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button 
-                onClick={() => setFullscreenGraph(null)}
-                style={{ padding: '10px 22px', backgroundColor: '#0F172A', color: '#FFF', borderRadius: '12px', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Close Fullscreen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= 5. RAINRGB COLOR MIXER ================= */}
-      {showColorPicker && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.45)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 300
-        }}>
-          <div style={{
-            width: '320px',
-            backgroundColor: '#F0F0F0',
-            border: '1px solid #707070',
-            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.5)',
-            padding: '12px 14px',
-            fontFamily: 'Segoe UI, Tahoma, sans-serif',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', fontWeight: 600 }}>
-                <span style={{ color: '#E11D48', fontWeight: 900 }}>r</span> RainRGB
-              </div>
-              <button 
-                onClick={() => setShowColorPicker(false)}
-                style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', color: '#555' }}
-              >
-                X
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', height: '170px', marginBottom: '10px' }}>
-              <div style={{ position: 'relative', flex: 1, border: '1px solid #7F7F7F', overflow: 'hidden' }}>
-                <canvas 
-                  ref={spectrumCanvasRef}
-                  width={250}
-                  height={170}
-                  onClick={handleSpectrumClick}
-                  style={{ width: '100%', height: '100%', display: 'block', cursor: 'crosshair' }}
-                />
-                <div style={{
-                  position: 'absolute',
-                  left: `${crosshairPos.x}px`,
-                  top: `${crosshairPos.y}px`,
-                  width: '12px',
-                  height: '12px',
-                  transform: 'translate(-50%, -50%)',
-                  pointerEvents: 'none'
-                }}>
-                  <div style={{ position: 'absolute', left: '5px', top: '0', width: '2px', height: '12px', backgroundColor: '#000' }} />
-                  <div style={{ position: 'absolute', left: '0', top: '5px', width: '12px', height: '2px', backgroundColor: '#000' }} />
+              <div style={{ 
+                backgroundColor: '#ffffff', 
+                border: '1px solid #ebece6',
+                padding: '18px 20px', 
+                borderRadius: '24px', 
+                boxShadow: '0 2px 10px rgba(0,0,0,0.02)', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'space-between', 
+                minHeight: '140px' 
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#71717a' }}>Solved PYQ</span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#f5f5f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ArrowUpRight size={15} color="#18181b" />
+                  </div>
+                </div>
+                <div>
+                  <div className="num-bold" style={{ fontSize: '36px', lineHeight: 1, marginBottom: '6px', color: '#18181b' }}>10</div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, backgroundColor: '#eef9f2', color: '#15803d', padding: '3px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <ArrowUp size={11} /> <b className="num-bold">6</b> Increased from last month
+                  </span>
                 </div>
               </div>
 
               <div 
-                ref={hueStripRef}
-                onClick={handleHueClick}
-                style={{
-                  width: '18px',
-                  height: '100%',
-                  position: 'relative',
-                  border: '1px solid #7F7F7F',
-                  background: 'linear-gradient(to bottom, #FF0000 0%, #FF00FF 17%, #0000FF 33%, #00FFFF 50%, #00FF00 67%, #FFFF00 83%, #FF0000 100%)',
-                  cursor: 'pointer'
+                onClick={() => setActiveView('notes')}
+                title="Click to open Keep Notes studio"
+                style={{ 
+                  backgroundColor: '#ffffff', 
+                  border: '1px solid #ebece6',
+                  padding: '18px 20px', 
+                  borderRadius: '24px', 
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.02)', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between', 
+                  minHeight: '140px', 
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#14532d' }}>Notes (Open Studio)</span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#eef9f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ArrowUpRight size={15} color="#14532d" />
+                  </div>
+                </div>
+                <div>
+                  <div className="num-bold" style={{ fontSize: '36px', lineHeight: 1, marginBottom: '6px', color: '#18181b' }}>{notes.length}</div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, backgroundColor: '#fef6e7', color: '#b45309', padding: '3px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <ArrowUp size={11} /> <b className="num-bold">2</b> Increased from last month
+                  </span>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => setActiveView('socratic')}
+                title="Click to open Socratic AI"
+                style={{ 
+                  backgroundColor: '#ffffff', 
+                  border: '1px solid #ebece6',
+                  padding: '18px 20px', 
+                  borderRadius: '24px', 
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.02)', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between', 
+                  minHeight: '140px', 
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#14532d' }}>Socratic AI (Launch)</span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#eef9f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ArrowUpRight size={15} color="#14532d" />
+                  </div>
+                </div>
+                <div>
+                  <div className="num-bold" style={{ fontSize: '36px', lineHeight: 1, marginBottom: '6px', color: '#18181b' }}>2</div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, backgroundColor: '#fdf2f2', color: '#b91c1c', padding: '3px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#ef4444' }}></span> On Discuss / Analysis
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* Analytics & Progress grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: '16px', alignItems: 'start', width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, width: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.85fr 1fr', gap: '16px' }}>
+                  <div style={{ 
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #ebece6',
+                    borderRadius: '24px', 
+                    padding: '20px 22px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between', 
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+                    minHeight: '245px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>Engagement Analytics</h3>
+                        <p style={{ fontSize: '11px', color: '#71717a', margin: '2px 0 0 0' }}>Weekly activity & problem solving pace</p>
+                      </div>
+                      <span className="num-bold" style={{ fontSize: '10.5px', backgroundColor: '#eef9f2', color: '#14532d', padding: '3px 8px', borderRadius: '9999px' }}>
+                        74% Avg
+                      </span>
+                    </div>
+
+                    <div style={{ height: '155px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', paddingTop: '8px' }}>
+                      <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                        <div className="striped-pattern" style={{ width: '100%', maxWidth: '42px', height: '62%', borderRadius: '9999px', border: '1px solid #cbd5e1' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#71717a' }}>S</span>
+                      </div>
+                      <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ width: '100%', maxWidth: '42px', height: '84%', borderRadius: '9999px', backgroundColor: 'var(--emerald-700)' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#71717a' }}>M</span>
+                      </div>
+                      <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '6px', position: 'relative' }}>
+                        <span className="num-bold" style={{ position: 'absolute', top: '-10px', fontSize: '9px', backgroundColor: '#18181b', color: '#ffffff', padding: '1px 5px', borderRadius: '5px' }}>74%</span>
+                        <div style={{ width: '100%', maxWidth: '42px', height: '72%', borderRadius: '9999px', backgroundColor: 'var(--emerald-400)' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--emerald-700)' }}>T</span>
+                      </div>
+                      <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ width: '100%', maxWidth: '42px', height: '98%', borderRadius: '9999px', backgroundColor: 'var(--emerald-900)' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#71717a' }}>W</span>
+                      </div>
+                      <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                        <div className="striped-pattern" style={{ width: '100%', maxWidth: '42px', height: '54%', borderRadius: '9999px', border: '1px solid #cbd5e1' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#71717a' }}>T</span>
+                      </div>
+                      <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                        <div className="striped-pattern" style={{ width: '100%', maxWidth: '42px', height: '65%', borderRadius: '9999px', border: '1px solid #cbd5e1' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#71717a' }}>F</span>
+                      </div>
+                      <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                        <div className="striped-pattern" style={{ width: '100%', maxWidth: '42px', height: '78%', borderRadius: '9999px', border: '1px solid #cbd5e1' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#71717a' }}>S</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ 
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #ebece6',
+                    borderRadius: '24px', 
+                    padding: '20px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between', 
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+                    minHeight: '245px'
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <h3 style={{ fontSize: '14.5px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>Reminders</h3>
+                        <CalendarIcon size={16} color="#71717a" />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '14.5px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', lineHeight: 1.3, margin: '0 0 4px 0' }}>
+                          NCERT Live Doubt Clearing Session
+                        </h4>
+                        <p style={{ fontSize: '11px', color: '#52525b', margin: 0 }}>
+                          Time : <b className="num-bold">02.00</b> pm - <b className="num-bold">04.00</b> pm
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setActiveView('player')}
+                      style={{
+                        ...texturedButtonStyle,
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '14px',
+                        fontWeight: 700,
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-heading)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Video size={15} />
+                      <span>Start Session</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '16px' }}>
+                  <div style={{ 
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #ebece6',
+                    borderRadius: '24px', 
+                    padding: '20px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between', 
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.02)', 
+                    minHeight: '265px'
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <CalendarIcon size={15} color="#15803d" />
+                          <h3 style={{ fontSize: '14px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
+                            October 2026
+                          </h3>
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button style={{ width: '24px', height: '24px', borderRadius: '7px', border: 'none', background: '#f5f5f1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <ChevronLeft size={12} color="#18181b" />
+                          </button>
+                          <button style={{ width: '24px', height: '24px', borderRadius: '7px', border: 'none', background: '#f5f5f1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <ChevronRight size={12} color="#18181b" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '10.5px', fontWeight: 700, color: '#71717a', marginBottom: '6px' }}>
+                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center' }}>
+                        <span /><span /><span /><span />
+                        {daysInMonth.map((day) => {
+                          const isSelected = day === selectedDate;
+                          const hasEvent = [17, 28, 30].includes(day);
+
+                          return (
+                            <button
+                              key={day}
+                              onClick={() => setSelectedDate(day)}
+                              style={{
+                                padding: '5px 0',
+                                borderRadius: '7px',
+                                border: 'none',
+                                backgroundColor: isSelected ? 'var(--emerald-800)' : hasEvent ? '#eef9f2' : 'transparent',
+                                color: isSelected ? '#ffffff' : hasEvent ? '#15803d' : '#18181b',
+                                fontWeight: isSelected || hasEvent ? 800 : 600,
+                                fontSize: '11px',
+                                fontFamily: 'var(--font-heading)',
+                                cursor: 'pointer',
+                                position: 'relative'
+                              }}
+                            >
+                              {day}
+                              {hasEvent && !isSelected && (
+                                <span style={{ position: 'absolute', bottom: '2px', left: '50%', transform: 'translateX(-50%)', width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#15803d' }} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '14px', backgroundColor: '#f5f5f1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h5 style={{ fontSize: '11.5px', fontWeight: 800, color: '#18181b', margin: 0 }}>
+                          {selectedDate === 28 ? 'Physics Optics Review' : selectedDate === 30 ? 'Organic Mechanism Drill' : 'Derivation Practice'}
+                        </h5>
+                        <span style={{ fontSize: '10px', color: '#71717a' }}>10:00 AM • Aspirant Track</span>
+                      </div>
+                      <span style={{ fontSize: '9.5px', fontWeight: 800, backgroundColor: '#eef9f2', color: '#15803d', padding: '2px 7px', borderRadius: '9999px' }}>
+                        Oct {selectedDate}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ 
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #ebece6',
+                    borderRadius: '24px', 
+                    padding: '20px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    textAlign: 'center', 
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.02)', 
+                    minHeight: '265px'
+                  }}>
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h3 style={{ fontSize: '14.5px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>Pacing Progress</h3>
+                    </div>
+
+                    <div style={{ position: 'relative', width: '210px', height: '115px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                      <svg viewBox="0 0 200 115" style={{ width: '100%', height: '100%' }}>
+                        <defs>
+                          <pattern id="gaugeHatch" width="6" height="6" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="6" stroke="#a1a1aa" strokeWidth="2.5" />
+                          </pattern>
+                        </defs>
+
+                        <path 
+                          d="M 22 105 A 78 78 0 0 1 125 28" 
+                          fill="none" 
+                          stroke="#14532d" 
+                          strokeWidth="24" 
+                          strokeLinecap="round" 
+                        />
+
+                        <path 
+                          d="M 132 32 A 78 78 0 0 1 168 62" 
+                          fill="none" 
+                          stroke="#15803d" 
+                          strokeWidth="24" 
+                          strokeLinecap="round" 
+                        />
+
+                        <path 
+                          d="M 174 72 A 78 78 0 0 1 178 105" 
+                          fill="none" 
+                          stroke="url(#gaugeHatch)" 
+                          strokeWidth="24" 
+                          strokeLinecap="round" 
+                        />
+                      </svg>
+
+                      <div style={{ position: 'absolute', bottom: '2px', textAlign: 'center' }}>
+                        <span className="num-bold" style={{ fontSize: '30px', color: '#18181b', display: 'block', lineHeight: 1 }}>41%</span>
+                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#71717a', textTransform: 'capitalize' }}>Project Ended</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', fontSize: '10.5px', color: '#52525b', fontWeight: 600 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#14532d' }}></span>
+                        <span>Completed</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#15803d' }}></span>
+                        <span>In Progress</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#a1a1aa' }}></span>
+                        <span>Pending</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Assignments & Tracker */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '280px', flexShrink: 0 }}>
+                <div style={{ 
+                  backgroundColor: '#ffffff', 
+                  border: '1px solid #ebece6',
+                  borderRadius: '24px', 
+                  padding: '18px 16px', 
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.02)', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between', 
+                  width: '100%', 
+                  boxSizing: 'border-box' 
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', width: '100%' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>Assignments</h3>
+                    <button style={{ 
+                      padding: '3px 9px', 
+                      borderRadius: '9px', 
+                      backgroundColor: '#eef9f2', 
+                      border: 'none', 
+                      fontSize: '10.5px', 
+                      fontWeight: 800, 
+                      color: '#14532d', 
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(20, 83, 45, 0.08)'
+                    }}>
+                      + New
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <BookMarked size={17} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Develop API Endpoints
+                        </h4>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 26, 2024</p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#ccfbf1', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Dna size={17} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Onboarding Flow
+                        </h4>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 28, 2024</p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#eef9f2', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Binary size={17} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Build Dashboard
+                        </h4>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 30, 2024</p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#fef6e7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Zap size={17} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Optimize Page Load
+                        </h4>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Dec 5, 2024</p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Sparkles size={17} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Cross-Browser Testing
+                        </h4>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Dec 6, 2024</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div style={{
-                  position: 'absolute',
-                  left: '-6px',
-                  top: `${(hue / 360) * 100}%`,
-                  width: 0,
-                  height: 0,
-                  borderTop: '4px solid transparent',
-                  borderBottom: '4px solid transparent',
-                  borderLeft: '5px solid #000',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  right: '-6px',
-                  top: `${(hue / 360) * 100}%`,
-                  width: 0,
-                  height: 0,
-                  borderTop: '4px solid transparent',
-                  borderBottom: '4px solid transparent',
-                  borderRight: '5px solid #000',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
-                }} />
+                  borderRadius: '24px',
+                  color: '#ffffff',
+                  padding: '20px 22px',
+                  backgroundColor: '#041208',
+                  backgroundImage: `url('${baseUrl}green002.jpg'), url('${baseUrl}green002.png')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  minHeight: '220px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.18)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10.5px', fontWeight: 800, fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#ffffff', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>TIME TRACKER</span>
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#4ade80', boxShadow: '0 0 8px #4ade80' }}></span>
+                  </div>
+
+                  <div style={{ textAlign: 'center', margin: '10px 0' }}>
+                    <div className="num-bold" style={{ fontSize: '38px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px', color: '#ffffff', textShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>
+                      {formatTimer(trackerSeconds)}
+                    </div>
+                    <p style={{ fontSize: '10.5px', color: '#dcfce7', margin: '3px 0 0 0', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>Topic: Organic Reaction Mechanism</p>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                    <button 
+                      onClick={() => setIsTrackerRunning(!isTrackerRunning)} 
+                      style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#ffffff', color: '#092211', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 3px 10px rgba(0,0,0,0.3)' }}
+                    >
+                      {isTrackerRunning ? <Pause size={17} /> : <Play size={17} />}
+                    </button>
+                    <button 
+                      onClick={() => { setTrackerSeconds(0); setIsTrackerRunning(false); }} 
+                      style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#dc2626', color: '#ffffff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 3px 10px rgba(220, 38, 38, 0.4)' }}
+                    >
+                      <Square size={15} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
+        ) : activeView === 'notes' ? (
+          /* ================= SINGLE NATIVE NOTES VIEW (NO SECOND DASHBOARD) ================= */
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '30px',
+            border: '1px solid rgba(0,0,0,0.04)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+            boxSizing: 'border-box',
+            width: '100%',
+            minHeight: '620px'
+          }}>
+            {/* Folder Header Banner (if a folder is active) */}
+            {activeFolderId && currentFolder ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setActiveFolderId(null)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 14px',
+                      borderRadius: '12px',
+                      backgroundColor: '#f5f5f1',
+                      border: 'none',
+                      color: '#18181b',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <ArrowLeft size={16} />
+                    <span>Back to All Folders</span>
+                  </button>
 
-            <div style={{
-              width: '100%',
-              height: '40px',
-              backgroundColor: customAccent,
-              border: '1px solid #7F7F7F',
-              marginBottom: '10px'
-            }} />
+                  <button
+                    onClick={openNewNoteModal}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 16px',
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--emerald-800)',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontWeight: 800,
+                      fontSize: '12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Plus size={15} />
+                    <span>New Note in Folder</span>
+                  </button>
+                </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '11px', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontWeight: 600, width: '12px' }}>R:</span>
-                <input 
-                  type="number" 
-                  value={rgbValues.r} 
-                  onChange={(e) => {
-                    const r = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-                    setRgbValues((p) => ({ ...p, r }));
-                    const nextHex = ((1 << 24) + (r << 16) + (rgbValues.g << 8) + rgbValues.b).toString(16).slice(1).toUpperCase();
-                    setHexInput(nextHex);
-                    updatePersistentColor(`#${nextHex}`);
+                <div style={{
+                  padding: '22px',
+                  borderRadius: '24px',
+                  backgroundColor: COLOR_PRESETS.find(c => c.id === currentFolder.color)?.bg || '#fefce8',
+                  border: `1px solid ${COLOR_PRESETS.find(c => c.id === currentFolder.color)?.border || '#fef08a'}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, backgroundColor: '#ffffff', color: '#18181b', padding: '2px 8px', borderRadius: '9999px' }}>
+                        {currentFolder.subject}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#71717a' }}>Updated {currentFolder.date}</span>
+                    </div>
+                    <h3 style={{ fontSize: '20px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
+                      {currentFolder.name}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* PDF Module */}
+                <div style={{
+                  padding: '16px 20px',
+                  borderRadius: '18px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #ebece6',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <FileCode size={20} />
+                    </div>
+                    <div>
+                      <h5 style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
+                        {currentFolder.pdfTitle || 'Official Chapter Resource Book (PDF)'}
+                      </h5>
+                      <p style={{ fontSize: '11px', color: '#71717a', margin: '2px 0 0 0' }}>Official NCERT Module • High-yield summaries</p>
+                    </div>
+                  </div>
+
+                  <span style={{
+                    padding: '6px 14px',
+                    borderRadius: '9999px',
+                    backgroundColor: '#fef3c7',
+                    border: '1px solid #fde68a',
+                    color: '#92400e',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-heading)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <Download size={13} />
+                    <span>Coming Soon</span>
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* FOLDERS GRID ON TOP */
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
+                    Recent Folders
+                  </h3>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+                  {folders.map(folder => {
+                    const colorConfig = COLOR_PRESETS.find(c => c.id === folder.color) || COLOR_PRESETS[0];
+
+                    return (
+                      <div
+                        key={folder.id}
+                        onClick={() => setActiveFolderId(folder.id)}
+                        style={{
+                          backgroundColor: colorConfig.bg,
+                          border: `1px solid ${colorConfig.border}`,
+                          borderRadius: '20px',
+                          padding: '18px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          minHeight: '125px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                          cursor: 'pointer',
+                          transition: 'transform 0.15s ease'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '12px',
+                            backgroundColor: colorConfig.iconBg,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: colorConfig.text
+                          }}>
+                            <Folder size={18} />
+                          </div>
+
+                          <span style={{ fontSize: '10px', fontWeight: 800, backgroundColor: 'rgba(255,255,255,0.7)', color: colorConfig.text, padding: '2px 8px', borderRadius: '9999px' }}>
+                            {folder.subject}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 style={{ fontSize: '14px', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#18181b', margin: '0 0 2px 0' }}>
+                            {folder.name}
+                          </h4>
+                          <span style={{ fontSize: '11px', color: '#71717a' }}>{folder.date}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => setIsFolderModalOpen(true)}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '2px dashed #d4d4d8',
+                      borderRadius: '20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      minHeight: '125px',
+                      cursor: 'pointer',
+                      color: '#18181b'
+                    }}
+                  >
+                    <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#f4f4f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <FolderPlus size={18} />
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>New folder</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* NOTES GRID */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '17px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
+                  {activeFolderId ? `Notes in ${currentFolder?.name}` : 'My Study Notes'}
+                </h3>
+
+                <button
+                  onClick={openNewNoteModal}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--emerald-800)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 800,
+                    fontSize: '12px',
+                    cursor: 'pointer'
                   }}
-                  style={{ width: '45px', padding: '2px 4px', border: '1px solid #999', fontSize: '11px', backgroundColor: '#FFF' }} 
-                />
+                >
+                  <Plus size={14} />
+                  <span>New Note</span>
+                </button>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontWeight: 600 }}>RGB:</span>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={`${rgbValues.r},${rgbValues.g},${rgbValues.b}`}
-                  style={{ width: '74px', padding: '2px 4px', border: '1px solid #999', fontSize: '10px', backgroundColor: '#FFF' }} 
-                />
-              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+                {displayedNotes.map(note => {
+                  const colorConfig = COLOR_PRESETS.find(c => c.id === note.color) || COLOR_PRESETS[1];
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontWeight: 600, width: '12px' }}>G:</span>
-                <input 
-                  type="number" 
-                  value={rgbValues.g} 
-                  onChange={(e) => {
-                    const g = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-                    setRgbValues((p) => ({ ...p, g }));
-                    const nextHex = ((1 << 24) + (rgbValues.r << 16) + (g << 8) + rgbValues.b).toString(16).slice(1).toUpperCase();
-                    setHexInput(nextHex);
-                    updatePersistentColor(`#${nextHex}`);
-                  }}
-                  style={{ width: '45px', padding: '2px 4px', border: '1px solid #999', fontSize: '11px', backgroundColor: '#FFF' }} 
-                />
-              </div>
+                  return (
+                    <div
+                      key={note.id}
+                      onClick={() => openEditNote(note)}
+                      style={{
+                        backgroundColor: colorConfig.bg,
+                        border: `1px solid ${colorConfig.border}`,
+                        borderRadius: '22px',
+                        padding: '18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: '220px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.15s ease'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '10.5px', color: '#71717a', fontWeight: 600 }}>{note.date}</span>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '7px', backgroundColor: '#18181b', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Edit3 size={12} />
+                          </div>
+                        </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontWeight: 600 }}>HEX:</span>
-                <input 
-                  type="text" 
-                  value={hexInput} 
-                  onChange={(e) => {
-                    setHexInput(e.target.value);
-                    if (/^[0-9A-Fa-f]{6}$/.test(e.target.value)) {
-                      updatePersistentColor(`#${e.target.value}`);
-                    }
-                  }}
-                  style={{ width: '74px', padding: '2px 4px', border: '1px solid #999', fontSize: '11px', backgroundColor: '#FFF' }} 
-                />
-              </div>
+                        <h4 style={{ fontSize: '14.5px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: '0 0 6px 0', lineHeight: 1.3 }}>
+                          {note.title}
+                        </h4>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontWeight: 600, width: '12px' }}>B:</span>
-                <input 
-                  type="number" 
-                  value={rgbValues.b} 
-                  onChange={(e) => {
-                    const b = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
-                    setRgbValues((p) => ({ ...p, b }));
-                    const nextHex = ((1 << 24) + (rgbValues.r << 16) + (rgbValues.g << 8) + b).toString(16).slice(1).toUpperCase();
-                    setHexInput(nextHex);
-                    updatePersistentColor(`#${nextHex}`);
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '9.5px', fontWeight: 800, backgroundColor: '#ffffff', color: colorConfig.text, padding: '2px 7px', borderRadius: '9999px' }}>
+                            {note.subject}
+                          </span>
+                          {note.chapter && (
+                            <span style={{ fontSize: '9.5px', fontWeight: 600, backgroundColor: 'rgba(255,255,255,0.7)', color: '#52525b', padding: '2px 7px', borderRadius: '9999px' }}>
+                              {note.chapter}
+                            </span>
+                          )}
+                        </div>
+
+                        <p style={{
+                          fontSize: '11.5px',
+                          lineHeight: 1.5,
+                          color: '#52525b',
+                          fontFamily: note.font || 'var(--font-body)',
+                          margin: 0,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 4,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          whiteSpace: 'pre-line'
+                        }}>
+                          {note.content}
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', paddingTop: '10px', borderTop: '1px solid rgba(0,0,0,0.05)', color: '#71717a', fontSize: '10px' }}>
+                        <Clock size={11} />
+                        <span>{note.time}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <button
+                  onClick={openNewNoteModal}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '2px dashed #d4d4d8',
+                    borderRadius: '22px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    minHeight: '220px',
+                    cursor: 'pointer',
+                    color: '#18181b'
                   }}
-                  style={{ width: '45px', padding: '2px 4px', border: '1px solid #999', fontSize: '11px', backgroundColor: '#FFF' }} 
-                />
+                >
+                  <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#f4f4f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Plus size={18} />
+                  </div>
+                  <span style={{ fontSize: '12.5px', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>Add note</span>
+                </button>
               </div>
             </div>
+          </div>
+        ) : (
+          /* ================= OTHER TOOLS ================= */
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '30px',
+            padding: '24px',
+            width: '100%',
+            boxSizing: 'border-box'
+          }}>
+            {activeView === 'quiz' && <MockTest active={true} onBackToDashboard={() => setActiveView('dashboard')} />}
+            {activeView === 'player' && <VideoTunnel onBackToDashboard={() => setActiveView('dashboard')} />}
+            {activeView === 'socratic' && <SocraticAI hint="idle" setHint={() => {}} onBackToDashboard={() => setActiveView('dashboard')} />}
+            {activeView === 'profile' && (
+              <div style={{ padding: '20px', color: '#18181b' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '8px' }}>Candidate Profile</h2>
+                <p style={{ color: '#52525b', fontSize: '13px' }}>Class 11 PCM Aspirant • Directorate of Education Track</p>
+                <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f5f5f1', borderRadius: '16px' }}>
+                  <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Stream:</strong> Physics, Chemistry, Mathematics</p>
+                  <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Target:</strong> JEE & NEET Preparation Platform</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button 
-                onClick={() => setShowColorPicker(false)}
-                style={{ width: '65px', padding: '3px 0', border: '1px solid #0078D7', background: '#E1E1E1', fontSize: '11px', cursor: 'pointer' }}
-              >
-                OK
+      </div>
+
+      {/* ================= MODAL: RICH NOTE CREATOR & EDITOR ================= */}
+      {isNoteModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(5px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '620px',
+            backgroundColor: '#ffffff',
+            borderRadius: '26px',
+            padding: '24px 28px',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.18)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
+                {editingNote ? 'Edit Study Note' : 'Create New Note'}
+              </h3>
+              <button onClick={() => setIsNoteModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#71717a' }}>
+                <X size={20} />
               </button>
             </div>
+
+            <form onSubmit={handleSaveNote} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                  Note Title *
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Wave Optics Formulae" 
+                  value={noteTitle}
+                  onChange={e => setNoteTitle(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid #e4e4e7',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                    Subject
+                  </label>
+                  <select 
+                    value={noteSubject}
+                    onChange={e => setNoteSubject(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid #e4e4e7',
+                      fontSize: '12px',
+                      outline: 'none',
+                      backgroundColor: '#ffffff',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Biology">Biology</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                    Chapter (Optional)
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Ch 10" 
+                    value={noteChapter}
+                    onChange={e => setNoteChapter(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid #e4e4e7',
+                      fontSize: '12px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                    Folder
+                  </label>
+                  <select 
+                    value={noteFolderId}
+                    onChange={e => setNoteFolderId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid #e4e4e7',
+                      fontSize: '12px',
+                      outline: 'none',
+                      backgroundColor: '#ffffff',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {folders.map(f => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                  Font Style
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {[
+                    { label: 'Inter (Clean)', value: 'var(--font-body)' },
+                    { label: 'Jakarta (Display)', value: 'var(--font-heading)' },
+                    { label: 'JetBrains (Formulas)', value: 'var(--font-mono)' }
+                  ].map(f => (
+                    <button
+                      type="button"
+                      key={f.value}
+                      onClick={() => setNoteFont(f.value)}
+                      style={{
+                        padding: '7px 10px',
+                        borderRadius: '10px',
+                        border: noteFont === f.value ? '2px solid var(--emerald-800)' : '1px solid #e4e4e7',
+                        backgroundColor: noteFont === f.value ? '#eef9f2' : '#ffffff',
+                        color: noteFont === f.value ? '#14532d' : '#18181b',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                  Color Theme ({COLOR_PRESETS.length} colors)
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {COLOR_PRESETS.map(c => (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => setNoteColor(c.id)}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '9999px',
+                        backgroundColor: c.bg,
+                        border: noteColor === c.id ? `2px solid ${c.text}` : `1px solid ${c.border}`,
+                        color: c.text,
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {noteColor === c.id && <Check size={12} />}
+                      <span>{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a' }}>
+                    Note Content
+                  </label>
+
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button type="button" title="Bold" onClick={() => insertFormatting('**', '**')} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e4e4e7', background: '#f4f4f5', cursor: 'pointer' }}>
+                      <Bold size={13} />
+                    </button>
+                    <button type="button" title="Italic" onClick={() => insertFormatting('*', '*')} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e4e4e7', background: '#f4f4f5', cursor: 'pointer' }}>
+                      <Italic size={13} />
+                    </button>
+                    <button type="button" title="Heading" onClick={() => insertFormatting('## ')} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e4e4e7', background: '#f4f4f5', cursor: 'pointer' }}>
+                      <Heading2 size={13} />
+                    </button>
+                    <button type="button" title="Bullet List" onClick={() => insertFormatting('• ')} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e4e4e7', background: '#f4f4f5', cursor: 'pointer' }}>
+                      <List size={13} />
+                    </button>
+                    <button type="button" title="Numbered List" onClick={() => insertFormatting('1. ')} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e4e4e7', background: '#f4f4f5', cursor: 'pointer' }}>
+                      <ListOrdered size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                <textarea 
+                  id="note-editor-box"
+                  rows={6}
+                  placeholder="Type derivations, concepts, definitions..."
+                  value={noteContent}
+                  onChange={e => setNoteContent(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: '14px',
+                    border: '1px solid #e4e4e7',
+                    fontSize: '13px',
+                    fontFamily: noteFont,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: editingNote ? 'space-between' : 'flex-end', alignItems: 'center', marginTop: '6px' }}>
+                {editingNote && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotes(prev => prev.filter(n => n.id !== editingNote.id));
+                      setIsNoteModalOpen(false);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#ef4444',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Delete Note
+                  </button>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsNoteModalOpen(false)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '12px',
+                      backgroundColor: '#f4f4f5',
+                      border: 'none',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--emerald-800)',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '12.5px',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {editingNote ? 'Save Changes' : 'Create Note'}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* ================= MODAL: CREATE FOLDER ================= */}
+      {isFolderModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(5px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '440px',
+            backgroundColor: '#ffffff',
+            borderRadius: '26px',
+            padding: '24px 26px',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.18)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
+                Create New Folder
+              </h3>
+              <button onClick={() => setIsFolderModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#71717a' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateFolder} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                  Folder Name
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Modern Physics PYQs" 
+                  value={newFolderName}
+                  onChange={e => setNewFolderName(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid #e4e4e7',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                  Associated Subject
+                </label>
+                <select 
+                  value={newFolderSubject}
+                  onChange={e => setNewFolderSubject(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid #e4e4e7',
+                    fontSize: '13px',
+                    outline: 'none',
+                    backgroundColor: '#ffffff',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Biology">Biology</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#71717a', display: 'block', marginBottom: '6px' }}>
+                  Theme Color
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {COLOR_PRESETS.slice(0, 6).map(c => (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => setNewFolderColor(c.id)}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '9999px',
+                        backgroundColor: c.bg,
+                        border: newFolderColor === c.id ? `2px solid ${c.text}` : `1px solid ${c.border}`,
+                        color: c.text,
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsFolderModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f4f4f5',
+                    border: 'none',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--emerald-800)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Create Folder
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

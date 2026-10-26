@@ -6,6 +6,7 @@ import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './features/Dashboard/Dashboard';
+import './styles/index.css';
 import './home.css';
 
 // ==========================================
