@@ -31,7 +31,6 @@ import {
   Plus,
   Folder,
   FolderPlus,
-  MoreHorizontal,
   Edit3,
   Clock,
   FileCode,
@@ -49,9 +48,10 @@ import MockTest from '../mock-test/MockTest';
 import NcertHub from '../ncert/NcertHub';
 import VideoTunnel from '../player/VideoTunnel';
 import SocraticAI from '../socratic/SocraticAI';
+import Profile from '../profile/profile';
 import '../../styles/tokens.css';
 
-// 10 Note Colors
+// 10 Vibrant & Pastel Note Colors
 const COLOR_PRESETS = [
   { id: 'yellow', label: 'Buttercup', bg: '#fef9c3', border: '#fde047', text: '#854d0e', iconBg: '#fef08a' },
   { id: 'coral', label: 'Coral Peach', bg: '#ffe4e6', border: '#fecdd3', text: '#9f1239', iconBg: '#fecdd3' },
@@ -336,6 +336,11 @@ export default function Dashboard({ onNavigate }) {
     border: 'none',
     cursor: 'pointer'
   };
+
+  // FULLSCREEN PROFILE VIEW (No sidebar, pure full screen profile with back button)
+  if (activeView === 'profile') {
+    return <Profile onBackToDashboard={() => setActiveView('dashboard')} />;
+  }
 
   return (
     <div style={{ 
@@ -686,7 +691,7 @@ export default function Dashboard({ onNavigate }) {
             margin: 0,
             flexShrink: 0
           }}>
-            {activeView === 'dashboard' ? 'Dashboard' : activeView === 'notes' ? (activeFolderId ? currentFolder?.name : 'Keep Notes') : activeView === 'quiz' ? 'Live Quiz' : activeView === 'socratic' ? 'Socratic AI' : activeView === 'profile' ? 'Candidate Profile' : 'Video Tunnel'}
+            {activeView === 'dashboard' ? 'Dashboard' : activeView === 'notes' ? (activeFolderId ? currentFolder?.name : 'Keep Notes') : activeView === 'quiz' ? 'Live Quiz' : activeView === 'socratic' ? 'Socratic AI' : 'Video Tunnel'}
           </h1>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1702,16 +1707,6 @@ export default function Dashboard({ onNavigate }) {
             {activeView === 'quiz' && <MockTest active={true} onBackToDashboard={() => setActiveView('dashboard')} />}
             {activeView === 'player' && <VideoTunnel onBackToDashboard={() => setActiveView('dashboard')} />}
             {activeView === 'socratic' && <SocraticAI hint="idle" setHint={() => {}} onBackToDashboard={() => setActiveView('dashboard')} />}
-            {activeView === 'profile' && (
-              <div style={{ padding: '20px', color: '#18181b' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '8px' }}>Candidate Profile</h2>
-                <p style={{ color: '#52525b', fontSize: '13px' }}>Class 11 PCM Aspirant • Directorate of Education Track</p>
-                <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f5f5f1', borderRadius: '16px' }}>
-                  <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Stream:</strong> Physics, Chemistry, Mathematics</p>
-                  <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Target:</strong> JEE & NEET Preparation Platform</p>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
