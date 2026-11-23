@@ -48,7 +48,7 @@ import MockTest from '../mock-test/MockTest';
 import NcertHub from '../ncert/NcertHub';
 import VideoTunnel from '../player/VideoTunnel';
 import SocraticAI from '../socratic/SocraticAI';
-import Profile from '../profile/profile';
+import Profile from '../profile/Profile';
 import '../../styles/tokens.css';
 
 // 10 Vibrant & Pastel Note Colors
@@ -130,8 +130,9 @@ const DEFAULT_SUBJECTS = [
   { id: 'cs', name: 'Comp Science' }
 ];
 
-export default function Dashboard({ onNavigate }) {
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'notes' | 'quiz' | 'socratic' | 'profile' | 'player'
+export default function Dashboard({ onNavigate, user, onLogout }) {
+  // Defaults to 'profile' view immediately upon login
+  const [activeView, setActiveView] = useState('profile'); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Subject Carousel State
@@ -337,9 +338,15 @@ export default function Dashboard({ onNavigate }) {
     cursor: 'pointer'
   };
 
-  // FULLSCREEN PROFILE VIEW (No sidebar, pure full screen profile with back button)
+  // FULLSCREEN PROFILE VIEW
   if (activeView === 'profile') {
-    return <Profile onBackToDashboard={() => setActiveView('dashboard')} />;
+    return (
+      <Profile 
+        user={user} 
+        onBackToDashboard={() => setActiveView('dashboard')} 
+        onLogout={onLogout} 
+      />
+    );
   }
 
   return (
@@ -586,7 +593,10 @@ export default function Dashboard({ onNavigate }) {
                 </button>
 
                 <button 
-                  onClick={() => onNavigate && onNavigate('home')}
+                  onClick={() => {
+                    if (onLogout) onLogout();
+                    else if (onNavigate) onNavigate('home');
+                  }}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '16px', backgroundColor: 'transparent', color: '#52525b', border: 'none', fontWeight: 500, fontSize: '13px', textAlign: 'left', cursor: 'pointer' }}
                 >
                   <LogOut size={18} color="#a1a1aa" />
@@ -741,11 +751,16 @@ export default function Dashboard({ onNavigate }) {
               }}></span>
             </button>
 
+            {/* Profile Picture */}
             <img 
               onClick={() => setActiveView('profile')}
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
+              src={user?.photoURL || `${baseUrl}avatar/avatar1.jpg`} 
               alt="User Profile" 
-              title="View Profile"
+              title="View Candidate Profile"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80";
+              }}
               style={{ 
                 width: '38px', 
                 height: '38px', 
@@ -1363,7 +1378,7 @@ export default function Dashboard({ onNavigate }) {
             </div>
           </div>
         ) : activeView === 'notes' ? (
-          /* ================= SINGLE NATIVE NOTES VIEW (NO SECOND DASHBOARD) ================= */
+          /* ================= SINGLE NATIVE NOTES VIEW ================= */
           <div style={{
             backgroundColor: '#ffffff',
             borderRadius: '30px',
@@ -1377,7 +1392,6 @@ export default function Dashboard({ onNavigate }) {
             width: '100%',
             minHeight: '620px'
           }}>
-            {/* Folder Header Banner (if a folder is active) */}
             {activeFolderId && currentFolder ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1444,7 +1458,6 @@ export default function Dashboard({ onNavigate }) {
                   </div>
                 </div>
 
-                {/* PDF Module */}
                 <div style={{
                   padding: '16px 20px',
                   borderRadius: '18px',
@@ -1486,7 +1499,6 @@ export default function Dashboard({ onNavigate }) {
                 </div>
               </div>
             ) : (
-              /* FOLDERS GRID ON TOP */
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <h3 style={{ fontSize: '17px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>

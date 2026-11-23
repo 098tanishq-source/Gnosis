@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Bookmark, 
@@ -27,10 +27,11 @@ import {
   Trash2,
   Target
 } from 'lucide-react';
-
+import { useAuth } from '../../context/AuthContext';
+ 
 const BASE = import.meta.env.BASE_URL || '/';
 
-// 11 Avatars from public/avatar/
+// 11 Avatars from public/avatar/[cite: 3]
 const LOCAL_AVATARS = Array.from({ length: 11 }, (_, i) => ({
   id: `av-${i + 1}`,
   name: `Avatar ${i + 1}`,
@@ -38,7 +39,7 @@ const LOCAL_AVATARS = Array.from({ length: 11 }, (_, i) => ({
   url: `${BASE}avatar/avatar${i + 1}.jpg`
 }));
 
-// 9 Banners from public/banners/
+// 9 Banners from public/banners/[cite: 3]
 const LOCAL_BANNERS = [
   { id: 'ban-1', name: 'Monochrome Manga', type: 'JPG', url: `${BASE}banners/ban1.jpg` },
   { id: 'ban-2', name: 'Shinchan Splash', type: 'GIF', url: `${BASE}banners/ban2.gif` },
@@ -74,7 +75,17 @@ const GENERATE_COMMIT_GRID = () => {
   return weeks;
 };
 
-export default function Prolife({ onBackToDashboard }) {
+export default function Profile({ user, onBackToDashboard, onLogout }) {
+  // Graceful auth fallback: will never crash even if AuthProvider isn't wrapped
+  let authContext = null;
+  try {
+    authContext = useAuth();
+  } catch (e) {
+    // AuthContext optional
+  }
+
+  const activeUser = authContext?.currentUser || user;
+
   useEffect(() => {
     const fontId = 'michroma-google-font';
     if (!document.getElementById(fontId)) {
@@ -88,51 +99,34 @@ export default function Prolife({ onBackToDashboard }) {
 
   const michromaStyle = { fontFamily: "'Michroma', sans-serif" };
 
-  // Tabs: 'profile' | 'subscription' | 'academic' | 'security' | 'edit_details'
   const [activeTab, setActiveTab] = useState('profile');
-  const [viewAllType, setViewAllType] = useState(null); // 'avatars' | 'banners' | null
+  const [viewAllType, setViewAllType] = useState(null);
   const [commitGrid] = useState(GENERATE_COMMIT_GRID);
 
   const [profileData, setProfileData] = useState(() => {
     try {
       const s = localStorage.getItem('gnosis_user_prolife_v7');
-      return s ? JSON.parse(s) : {
-        name: 'Tanishq Sood',
-        handle: 'tanishq_098',
-        location: 'Delhi, India',
-        role: 'Class 11 PCM Aspirant • Target AIR < 500',
-        description: 'Class 11 PCM student focused on JEE Advanced 2027. Speed problem-solving in Classical Mechanics, Optics, and Organic Reaction Mechanisms.',
-        targetExam: 'JEE Advanced 2027',
-        targetPercentile: '99.4 %ile',
-        weakSubject: 'Physics - Mechanics',
-        rating: '4.8',
-        duration: '180 Days',
-        pyqsSolved: 540,
-        coverUrl: LOCAL_BANNERS[0].url,
-        avatarUrl: LOCAL_AVATARS[0].url,
-        isBookmarked: true
-      };
-    } catch {
-      return {
-        name: 'Tanishq Sood',
-        handle: 'tanishq_098',
-        location: 'Delhi, India',
-        role: 'Class 11 PCM Aspirant • Target AIR < 500',
-        description: 'Class 11 PCM student focused on JEE Advanced 2027. Speed problem-solving in Classical Mechanics, Optics, and Organic Reaction Mechanisms.',
-        targetExam: 'JEE Advanced 2027',
-        targetPercentile: '99.4 %ile',
-        weakSubject: 'Physics - Mechanics',
-        rating: '4.8',
-        duration: '180 Days',
-        pyqsSolved: 540,
-        coverUrl: LOCAL_BANNERS[0].url,
-        avatarUrl: LOCAL_AVATARS[0].url,
-        isBookmarked: true
-      };
-    }
+      if (s) return JSON.parse(s);
+    } catch {}
+    return {
+      name: activeUser?.displayName || 'Tanishq Sood',
+      email: activeUser?.email || '098tanishq@gmail.com',
+      handle: 'tanishq_098',
+      location: 'Delhi, India',
+      role: 'Class 11 PCM Aspirant • Target AIR < 500',
+      description: 'Class 11 PCM student focused on JEE Advanced 2027. Speed problem-solving in Classical Mechanics, Optics, and Organic Reaction Mechanisms.',
+      targetExam: 'JEE Advanced 2027',
+      targetPercentile: '99.4 %ile',
+      weakSubject: 'Physics - Mechanics',
+      rating: '4.8',
+      duration: '180 Days',
+      pyqsSolved: 540,
+      coverUrl: LOCAL_BANNERS[0].url,
+      avatarUrl: activeUser?.photoURL || LOCAL_AVATARS[0].url,
+      isBookmarked: true
+    };
   });
 
-  // Dedicated Form State for the Edit Details Tab
   const [formName, setFormName] = useState(profileData.name);
   const [formHandle, setFormHandle] = useState(profileData.handle);
   const [formRole, setFormRole] = useState(profileData.role);
@@ -142,7 +136,18 @@ export default function Prolife({ onBackToDashboard }) {
   const [formDesc, setFormDesc] = useState(profileData.description);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Sync edits if profileData updates externally
+  // Sync with Firebase user login
+  useEffect(() => {
+    if (activeUser) {
+      setProfileData(prev => ({
+        ...prev,
+        name: activeUser.displayName || prev.name,
+        email: activeUser.email || prev.email,
+        avatarUrl: activeUser.photoURL || prev.avatarUrl
+      }));
+    }
+  }, [activeUser]);
+
   useEffect(() => {
     setFormName(profileData.name);
     setFormHandle(profileData.handle);
@@ -153,7 +158,6 @@ export default function Prolife({ onBackToDashboard }) {
     setFormDesc(profileData.description);
   }, [profileData]);
 
-  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem('gnosis_user_prolife_v7', JSON.stringify(profileData));
   }, [profileData]);
@@ -192,6 +196,17 @@ export default function Prolife({ onBackToDashboard }) {
     setFormDesc(profileData.description);
   };
 
+  const handleSignOutTrigger = async () => {
+    if (authContext?.logout) {
+      await authContext.logout();
+    }
+    if (onLogout) {
+      onLogout();
+    } else if (onBackToDashboard) {
+      onBackToDashboard();
+    }
+  };
+
   return (
     <div style={{
       width: '100vw',
@@ -205,7 +220,7 @@ export default function Prolife({ onBackToDashboard }) {
       overflowX: 'hidden'
     }}>
       
-      {/* ================= 1. FLUSH TOP APP BAR ================= */}
+      {/* ================= TOP NAV BAR ================= */}
       <div style={{
         backgroundColor: '#ffffff',
         borderBottom: '1px solid #e7e8e1',
@@ -237,7 +252,6 @@ export default function Prolife({ onBackToDashboard }) {
           <span>BACK TO DASHBOARD</span>
         </button>
 
-        {/* Tab Switcher */}
         <div style={{
           display: 'flex',
           gap: '4px',
@@ -283,7 +297,7 @@ export default function Prolife({ onBackToDashboard }) {
         </div>
       </div>
 
-      {/* ================= 2. MAIN 2-COLUMN VIEW ================= */}
+      {/* ================= 2-COLUMN STAGE ================= */}
       <div style={{
         padding: '10px 14px',
         display: 'grid',
@@ -294,13 +308,12 @@ export default function Prolife({ onBackToDashboard }) {
         alignItems: 'start'
       }}>
         
-        {/* ================= LEFT MAIN COLUMN ================= */}
+        {/* LEFT COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
           
-          {/* TAB 1: PROFILE OVERVIEW (CARD + COMMIT MATRIX) */}
+          {/* TAB 1: PROFILE OVERVIEW */}
           {activeTab === 'profile' && (
             <>
-              {/* Profile Card */}
               <div style={{
                 backgroundColor: '#ffffff',
                 borderRadius: '26px',
@@ -309,7 +322,6 @@ export default function Prolife({ onBackToDashboard }) {
                 boxSizing: 'border-box',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
               }}>
-                {/* Scenic Cover Banner */}
                 <div style={{
                   position: 'relative',
                   width: '100%',
@@ -452,7 +464,6 @@ export default function Prolife({ onBackToDashboard }) {
                     </div>
                   </div>
 
-                  {/* Metrics Bar */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -502,7 +513,7 @@ export default function Prolife({ onBackToDashboard }) {
                 </div>
               </div>
 
-              {/* Activity Commit Matrix */}
+              {/* Commit Matrix */}
               <div style={{
                 backgroundColor: '#0d1117',
                 borderRadius: '24px',
@@ -559,7 +570,7 @@ export default function Prolife({ onBackToDashboard }) {
             </>
           )}
 
-          {/* TAB 2: EDIT DETAILS (USER FORM) */}
+          {/* TAB 2: EDIT DETAILS */}
           {activeTab === 'edit_details' && (
             <div style={{
               backgroundColor: '#ffffff',
@@ -981,7 +992,7 @@ export default function Prolife({ onBackToDashboard }) {
               </div>
 
               <button
-                onClick={onBackToDashboard}
+                onClick={handleSignOutTrigger}
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -1007,7 +1018,7 @@ export default function Prolife({ onBackToDashboard }) {
 
         </div>
 
-        {/* ================= RIGHT COLUMN: BROWSE ALL CAROUSELS ================= */}
+        {/* RIGHT COLUMN: CAROUSELS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           
           {/* AVATARS CAROUSEL */}
@@ -1020,7 +1031,7 @@ export default function Prolife({ onBackToDashboard }) {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
-                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>PUBLIC/AVATAR</span>
+                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>PUBLIC/AVATAR[cite: 3]</span>
                 <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
                   AVATAR COLLECTION
                 </h4>
@@ -1047,7 +1058,6 @@ export default function Prolife({ onBackToDashboard }) {
               </button>
             </div>
 
-            {/* Quick Strip Preview (First 5) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
               {LOCAL_AVATARS.slice(0, 5).map(av => {
                 const isSelected = profileData.avatarUrl === av.url;
@@ -1089,7 +1099,7 @@ export default function Prolife({ onBackToDashboard }) {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
-                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>PUBLIC/BANNERS</span>
+                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>PUBLIC/BANNERS[cite: 3]</span>
                 <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
                   BANNER COLLECTION
                 </h4>
@@ -1116,7 +1126,6 @@ export default function Prolife({ onBackToDashboard }) {
               </button>
             </div>
 
-            {/* Quick Strip Preview (First 4) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
               {LOCAL_BANNERS.slice(0, 4).map(ban => {
                 const isSelected = profileData.coverUrl === ban.url;
@@ -1177,7 +1186,7 @@ export default function Prolife({ onBackToDashboard }) {
 
       </div>
 
-      {/* ================= MODAL: VIEW ALL (AMAZON-STYLE MODAL) ================= */}
+      {/* ================= MODAL: VIEW ALL ================= */}
       {viewAllType && (
         <div style={{
           position: 'fixed',
@@ -1209,7 +1218,7 @@ export default function Prolife({ onBackToDashboard }) {
               <div>
                 <span style={{ fontSize: '10px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>AMAZON-STYLE BROWSER</span>
                 <h3 style={{ fontSize: '16px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                  {viewAllType === 'avatars' ? 'ALL 11 AVATARS (/public/avatar/)' : 'ALL 9 BANNERS (/public/banners/)'}
+                  {viewAllType === 'avatars' ? 'ALL 11 AVATARS (/public/avatar/)' : 'ALL 9 BANNERS (/public/banners/)'}[cite: 3]
                 </h3>
               </div>
               <button 

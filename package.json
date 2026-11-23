@@ -1,4 +1,4 @@
- {
+{
   "name": "gnosis",
   "version": "1.0.0",
   "private": true,
@@ -16,11 +16,14 @@
     "@fontsource-variable/inter": "^5.2.6",
     "@fontsource-variable/jetbrains-mono": "^5.2.6",
     "@fontsource-variable/plus-jakarta-sans": "^5.2.6",
+    "firebase": "^13.4.0",
     "lucide-react": "^0.468.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "@vitejs/plugin-react": "^6.3.0",
+    "gh-pages": "^6.3.0",
+    "vite": "^8.3.8"
   }
 }
