@@ -1,35 +1,70 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   auth, 
   googleProvider, 
   signInWithPopup, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  sendEmailVerification
 } from '../styles/lib/firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword 
+} from 'firebase/auth';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loginWithGoogle = async () => {
+  const signupWithEmail = async (email, password) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
+      await sendEmailVerification(user, {
+        url: window.location.origin + window.location.pathname + '#dashboard',
+        handleCodeInApp: false
+      });
     } catch (err) {
-      console.error('Google Sign-In Error:', err);
-      throw err;
+      console.warn('Verification dispatch notice:', err);
     }
+    return user;
   };
 
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error('Sign Out Error:', err);
-      throw err;
+  const loginWithEmail = async (email, password) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
+  };
+
+  const loginWithGoogle = async () => {
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    return userCredential.user;
+  };
+
+  const logout = () => {
+    return signOut(auth);
+  };
+
+  const resendVerification = async () => {
+    if (auth.currentUser && !auth.currentUser.emailVerified) {
+      await sendEmailVerification(auth.currentUser, {
+        url: window.location.origin + window.location.pathname + '#dashboard',
+        handleCodeInApp: false
+      });
+      return true;
     }
+    return false;
+  };
+
+  const checkVerification = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setCurrentUser({ ...auth.currentUser });
+      return auth.currentUser.emailVerified;
+    }
+    return false;
   };
 
   useEffect(() => {
@@ -40,17 +75,24 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
+  const value = {
+    currentUser,
+    signupWithEmail,
+    loginWithEmail,
+    loginWithGoogle,
+    logout,
+    resendVerification,
+    checkVerification,
+    isEmailVerified: currentUser ? currentUser.emailVerified : false
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return useContext(AuthContext);
 }

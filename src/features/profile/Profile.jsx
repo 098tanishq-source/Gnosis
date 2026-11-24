@@ -1,1352 +1,1167 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowLeft, 
-  Bookmark, 
-  Check, 
-  ShieldCheck, 
-  Edit3, 
-  Atom, 
-  FlaskConical, 
-  Calculator, 
-  GitCommit, 
-  MapPin,
-  ChevronRight,
-  X,
-  Sparkles,
-  Layers,
-  Image as ImageIcon,
-  User,
-  CreditCard,
-  Shield,
-  GraduationCap,
-  Save,
-  RotateCcw,
-  CheckCircle2,
-  AlertTriangle,
-  LogOut,
-  Trash2,
-  Target
+  User, Edit3, CreditCard, Target, Shield, ArrowLeft, 
+  MapPin, Check, Save, Sparkles, Flame, BookOpen, Clock, 
+  Award, CheckCircle2, AlertCircle, Bookmark
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
- 
+import { auth, db } from '../../styles/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
 const BASE = import.meta.env.BASE_URL || '/';
+const getAsset = (path) => `${BASE}${path.startsWith('/') ? path.slice(1) : path}`;
 
-// 11 Avatars from public/avatar/[cite: 3]
-const LOCAL_AVATARS = Array.from({ length: 11 }, (_, i) => ({
-  id: `av-${i + 1}`,
-  name: `Avatar ${i + 1}`,
-  tag: i < 5 ? 'Aesthetic' : 'Classic',
-  url: `${BASE}avatar/avatar${i + 1}.jpg`
-}));
-
-// 9 Banners from public/banners/[cite: 3]
-const LOCAL_BANNERS = [
-  { id: 'ban-1', name: 'Monochrome Manga', type: 'JPG', url: `${BASE}banners/ban1.jpg` },
-  { id: 'ban-2', name: 'Shinchan Splash', type: 'GIF', url: `${BASE}banners/ban2.gif` },
-  { id: 'ban-3', name: 'Godzilla Comic', type: 'JPG', url: `${BASE}banners/ban3.jpg` },
-  { id: 'ban-4', name: 'Speed Drift', type: 'JPG', url: `${BASE}banners/ban4.jpg` },
-  { id: 'ban-5', name: 'Anime Romance', type: 'JPG', url: `${BASE}banners/ban5.jpg` },
-  { id: 'ban-6', name: 'Luffy Sunset', type: 'JPG', url: `${BASE}banners/ban6.jpg` },
-  { id: 'ban-7', name: 'GOAT Typography', type: 'JPG', url: `${BASE}banners/ban7.jpg` },
-  { id: 'ban-8', name: 'Cherry Blossom', type: 'JPG', url: `${BASE}banners/ban8.jpg` },
-  { id: 'ban-9', name: 'Summer Meadow', type: 'JPG', url: `${BASE}banners/ban9.jpg` }
+const AVATAR_COLLECTION = [
+  getAsset('avatar/avatar1.jpg'),
+  getAsset('avatar/avatar2.jpg'),
+  getAsset('avatar/avatar3.jpg'),
+  getAsset('avatar/avatar4.jpg'),
+  getAsset('avatar/avatar5.jpg'),
+  getAsset('avatar/avatar6.jpg'),
+  getAsset('avatar/avatar7.jpg'),
+  getAsset('avatar/avatar8.jpg'),
+  getAsset('avatar/avatar9.jpg'),
+  getAsset('avatar/avatar10.jpg'),
+  getAsset('avatar/avatar11.jpg')
 ];
 
-// Exact GitHub Commit Palette
-const GITHUB_GREENS = {
-  0: '#161b22',
-  1: '#0e4429',
-  2: '#006d32',
-  3: '#26a641',
-  4: '#39d353'
+const BANNER_COLLECTION = [
+  { name: 'Monochrome Manga', url: getAsset('banners/ban1.jpg') },
+  { name: 'Shinchan Splash', url: getAsset('banners/ban2.gif') },
+  { name: 'Godzilla Comic', url: getAsset('banners/ban3.jpg') },
+  { name: 'Speed Drift', url: getAsset('banners/ban4.jpg') },
+  { name: 'Cyber Neon', url: getAsset('banners/ban5.jpg') },
+  { name: 'Tokyo Dusk', url: getAsset('banners/ban6.jpg') },
+  { name: 'Vapor Wave', url: getAsset('banners/ban7.jpg') },
+  { name: 'Retro Grid', url: getAsset('banners/ban8.jpg') },
+  { name: 'Dark Nebula', url: getAsset('banners/ban9.jpg') }
+];
+
+const getInitialUserData = (user) => {
+  const emailPrefix = user?.email ? user.email.split('@')[0] : '';
+  const formattedName = user?.displayName || (emailPrefix ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1) : 'Candidate');
+  const formattedHandle = emailPrefix ? emailPrefix.toLowerCase() : 'candidate';
+  const avatar = user?.photoURL || AVATAR_COLLECTION[0];
+
+  return {
+    name: formattedName,
+    handle: formattedHandle,
+    location: '',
+    academicClass: 'Class 11 PCM',
+    streamTrack: 'PCM Track',
+    targetExam: 'JEE Advanced 2027',
+    subTarget: 'CBSE Class 11',
+    focusTopic: '',
+    rating: '4.8',
+    durationDays: 180,
+    percentile: '99.4 %/oile',
+    pyqsCommitted: 540,
+    avatar: avatar,
+    banner: BANNER_COLLECTION[0].url,
+    bio: '',
+    stats: {
+      testsCompleted: 18,
+      questionsPracticed: 540,
+      accuracyRate: '78%',
+      studyStreakDays: 14
+    }
+  };
 };
 
-const GENERATE_COMMIT_GRID = () => {
-  const weeks = [];
-  for (let w = 0; w < 32; w++) {
-    const days = [];
-    for (let d = 0; d < 7; d++) {
-      const rand = Math.random();
-      const level = rand > 0.65 ? (rand > 0.88 ? 4 : (rand > 0.75 ? 3 : 2)) : (rand > 0.4 ? 1 : 0);
-      days.push({ day: d, level, count: level * 8 });
-    }
-    weeks.push(days);
-  }
-  return weeks;
-};
-
-export default function Profile({ user, onBackToDashboard, onLogout }) {
-  // Graceful auth fallback: will never crash even if AuthProvider isn't wrapped
-  let authContext = null;
-  try {
-    authContext = useAuth();
-  } catch (e) {
-    // AuthContext optional
-  }
-
-  const activeUser = authContext?.currentUser || user;
-
-  useEffect(() => {
-    const fontId = 'michroma-google-font';
-    if (!document.getElementById(fontId)) {
-      const link = document.createElement('link');
-      link.id = fontId;
-      link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=Michroma&display=swap';
-      document.head.appendChild(link);
-    }
-  }, []);
-
-  const michromaStyle = { fontFamily: "'Michroma', sans-serif" };
-
+export default function Profile({ onBackToDashboard }) {
+  const activeUser = auth.currentUser;
   const [activeTab, setActiveTab] = useState('profile');
-  const [viewAllType, setViewAllType] = useState(null);
-  const [commitGrid] = useState(GENERATE_COMMIT_GRID);
+  const [saveStatus, setSaveStatus] = useState('');
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [emailNotice, setEmailNotice] = useState('');
 
-  const [profileData, setProfileData] = useState(() => {
+  const storageKey = activeUser?.uid 
+    ? `gnosis_profile_${activeUser.uid}` 
+    : 'gnosis_profile_guest';
+
+  const [profile, setProfile] = useState(() => {
     try {
-      const s = localStorage.getItem('gnosis_user_prolife_v7');
-      if (s) return JSON.parse(s);
-    } catch {}
-    return {
-      name: activeUser?.displayName || 'Tanishq Sood',
-      email: activeUser?.email || '098tanishq@gmail.com',
-      handle: 'tanishq_098',
-      location: 'Delhi, India',
-      role: 'Class 11 PCM Aspirant • Target AIR < 500',
-      description: 'Class 11 PCM student focused on JEE Advanced 2027. Speed problem-solving in Classical Mechanics, Optics, and Organic Reaction Mechanisms.',
-      targetExam: 'JEE Advanced 2027',
-      targetPercentile: '99.4 %ile',
-      weakSubject: 'Physics - Mechanics',
-      rating: '4.8',
-      duration: '180 Days',
-      pyqsSolved: 540,
-      coverUrl: LOCAL_BANNERS[0].url,
-      avatarUrl: activeUser?.photoURL || LOCAL_AVATARS[0].url,
-      isBookmarked: true
-    };
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return { ...getInitialUserData(activeUser), ...JSON.parse(saved) };
+      return getInitialUserData(activeUser);
+    } catch {
+      return getInitialUserData(activeUser);
+    }
   });
 
-  const [formName, setFormName] = useState(profileData.name);
-  const [formHandle, setFormHandle] = useState(profileData.handle);
-  const [formRole, setFormRole] = useState(profileData.role);
-  const [formLocation, setFormLocation] = useState(profileData.location);
-  const [formExam, setFormExam] = useState(profileData.targetExam);
-  const [formWeakSubject, setFormWeakSubject] = useState(profileData.weakSubject);
-  const [formDesc, setFormDesc] = useState(profileData.description);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [formData, setFormData] = useState({ ...profile });
 
-  // Sync with Firebase user login
   useEffect(() => {
-    if (activeUser) {
-      setProfileData(prev => ({
-        ...prev,
-        name: activeUser.displayName || prev.name,
-        email: activeUser.email || prev.email,
-        avatarUrl: activeUser.photoURL || prev.avatarUrl
-      }));
+    if (!activeUser?.uid) return;
+
+    const pullPassport = async () => {
+      try {
+        const docRef = doc(db, 'users', activeUser.uid);
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists() && snapshot.data().profile) {
+          const cloudData = snapshot.data().profile;
+          const merged = { ...getInitialUserData(activeUser), ...cloudData };
+          setProfile(merged);
+          setFormData(merged);
+          localStorage.setItem(`gnosis_profile_${activeUser.uid}`, JSON.stringify(merged));
+          localStorage.setItem('gnosis_active_avatar', merged.avatar);
+          window.dispatchEvent(new Event('gnosis_profile_updated'));
+        } else {
+          const fresh = getInitialUserData(activeUser);
+          setProfile(fresh);
+          setFormData(fresh);
+          localStorage.setItem(`gnosis_profile_${activeUser.uid}`, JSON.stringify(fresh));
+          localStorage.setItem('gnosis_active_avatar', fresh.avatar);
+          await setDoc(docRef, { profile: fresh }, { merge: true });
+        }
+      } catch (err) {
+        console.warn('Firestore sync fallback:', err);
+      }
+    };
+
+    pullPassport();
+  }, [activeUser?.uid]);
+
+  const persistProfile = async (updates) => {
+    const safeUpdated = {
+      ...profile,
+      ...updates,
+      stats: {
+        ...(profile.stats || {}),
+        ...(updates.stats || {})
+      }
+    };
+
+    setProfile(safeUpdated);
+    setFormData(safeUpdated);
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(safeUpdated));
+      localStorage.setItem('gnosis_user_profile_v7', JSON.stringify(safeUpdated));
+      if (safeUpdated.avatar) {
+        localStorage.setItem('gnosis_active_avatar', safeUpdated.avatar);
+      }
+      // Broadcast update so Dashboard navbar and header avatar immediately sync
+      window.dispatchEvent(new Event('gnosis_profile_updated'));
+    } catch (e) {
+      console.warn('LocalStorage error:', e);
     }
-  }, [activeUser]);
 
-  useEffect(() => {
-    setFormName(profileData.name);
-    setFormHandle(profileData.handle);
-    setFormRole(profileData.role);
-    setFormLocation(profileData.location);
-    setFormExam(profileData.targetExam);
-    setFormWeakSubject(profileData.weakSubject);
-    setFormDesc(profileData.description);
-  }, [profileData]);
+    if (activeUser?.uid) {
+      setSaveStatus('syncing');
+      try {
+        const docRef = doc(db, 'users', activeUser.uid);
+        await setDoc(docRef, { profile: safeUpdated }, { merge: true });
+        setSaveStatus('synced');
+        setTimeout(() => setSaveStatus(''), 2500);
+      } catch (err) {
+        console.error('Firestore save failed:', err);
+        setSaveStatus('error');
+      }
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem('gnosis_user_prolife_v7', JSON.stringify(profileData));
-  }, [profileData]);
+  const handleFormSave = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    persistProfile(formData);
+    setActiveTab('profile');
+  };
 
   const selectAvatar = (url) => {
-    setProfileData(prev => ({ ...prev, avatarUrl: url }));
+    persistProfile({ avatar: url });
   };
 
   const selectBanner = (url) => {
-    setProfileData(prev => ({ ...prev, coverUrl: url }));
+    persistProfile({ banner: url });
   };
 
-  const handleSaveDetails = (e) => {
-    e.preventDefault();
-    setProfileData(prev => ({
-      ...prev,
-      name: formName.trim() || prev.name,
-      handle: formHandle.trim().replace('@', '') || prev.handle,
-      role: formRole.trim() || prev.role,
-      location: formLocation.trim() || prev.location,
-      targetExam: formExam.trim() || prev.targetExam,
-      weakSubject: formWeakSubject,
-      description: formDesc.trim() || prev.description
-    }));
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
-  };
-
-  const handleResetForm = () => {
-    setFormName(profileData.name);
-    setFormHandle(profileData.handle);
-    setFormRole(profileData.role);
-    setFormLocation(profileData.location);
-    setFormExam(profileData.targetExam);
-    setFormWeakSubject(profileData.weakSubject);
-    setFormDesc(profileData.description);
-  };
-
-  const handleSignOutTrigger = async () => {
-    if (authContext?.logout) {
-      await authContext.logout();
+  const handleResendVerification = async () => {
+    if (!activeUser || activeUser.emailVerified) return;
+    setResendingEmail(true);
+    try {
+      const { sendEmailVerification } = await import('../../styles/lib/firebase');
+      await sendEmailVerification(activeUser, {
+        url: window.location.origin + window.location.pathname + '#dashboard',
+        handleCodeInApp: false
+      });
+      setEmailNotice('Verification link sent! Check your inbox.');
+    } catch (e) {
+      setEmailNotice('Failed: ' + e.message);
     }
-    if (onLogout) {
-      onLogout();
-    } else if (onBackToDashboard) {
-      onBackToDashboard();
-    }
+    setResendingEmail(false);
+    setTimeout(() => setEmailNotice(''), 4000);
   };
+
+  const heatmapSquares = Array.from({ length: 160 }, (_, i) => {
+    const intensity = (i * 7 + 13) % 5;
+    if (intensity === 0) return '#161b22';
+    if (intensity === 1) return '#0e4429';
+    if (intensity === 2) return '#006d32';
+    if (intensity === 3) return '#26a641';
+    return '#39d353';
+  });
 
   return (
-    <div style={{
-      width: '100vw',
-      minHeight: '100vh',
-      backgroundColor: '#f5f5f1',
-      padding: '0',
-      margin: '0',
-      display: 'flex',
-      flexDirection: 'column',
-      boxSizing: 'border-box',
-      overflowX: 'hidden'
-    }}>
-      
-      {/* ================= TOP NAV BAR ================= */}
-      <div style={{
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid #e7e8e1',
-        padding: '10px 18px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        boxSizing: 'border-box'
-      }}>
-        <button
-          onClick={onBackToDashboard}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            borderRadius: '12px',
-            backgroundColor: '#18181b',
-            color: '#ffffff',
-            border: 'none',
-            fontSize: '11px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            ...michromaStyle
-          }}
-        >
-          <ArrowLeft size={14} />
-          <span>BACK TO DASHBOARD</span>
-        </button>
+    <div className="gnosis-candidate-passport-page">
+      <style>{`
+        .gnosis-candidate-passport-page {
+          width: 100%;
+          min-height: 100vh;
+          background: #fbfbf9; /* Warm cream background */
+          padding: 24px 20px 60px 20px;
+          box-sizing: border-box;
+          color: #0f172a;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
 
-        <div style={{
-          display: 'flex',
-          gap: '4px',
-          backgroundColor: '#f5f5f1',
-          padding: '4px',
-          borderRadius: '9999px',
-          border: '1px solid #e7e8e1'
-        }}>
-          {[
-            { id: 'profile', label: '1. Profile', icon: User },
-            { id: 'edit_details', label: '2. Edit Details', icon: Edit3 },
-            { id: 'subscription', label: '3. Subscription & AI', icon: CreditCard },
-            { id: 'academic', label: '4. Academic Target', icon: GraduationCap },
-            { id: 'security', label: '5. Security & Data', icon: Shield }
-          ].map(t => {
-            const isActive = activeTab === t.id;
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 14px',
-                  borderRadius: '9999px',
-                  border: 'none',
-                  backgroundColor: isActive ? '#18181b' : 'transparent',
-                  color: isActive ? '#ffffff' : '#71717a',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  ...michromaStyle
-                }}
-              >
-                <Icon size={13} />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
+        .gnosis-candidate-passport-container {
+          max-width: 1280px;
+          margin: 0 auto;
+        }
+
+        /* Top Bar */
+        .cp-top-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .cp-btn-back {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: #000000;
+          color: #ffffff;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .cp-btn-back:hover {
+          opacity: 0.85;
+        }
+
+        .cp-tab-group {
+          display: flex;
+          align-items: center;
+          background: #ffffff;
+          padding: 4px;
+          border-radius: 24px;
+          gap: 2px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          overflow-x: auto;
+        }
+        .cp-tab-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 18px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.2s ease;
+        }
+        .cp-tab-btn.active {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        /* Verification Alert */
+        .cp-verify-banner {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 14px;
+          padding: 12px 18px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          font-size: 12px;
+          color: #991b1b;
+        }
+        .cp-verify-btn {
+          background: #dc2626;
+          color: #fff;
+          border: none;
+          padding: 6px 14px;
+          border-radius: 8px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        /* Grid */
+        .cp-dashboard-grid {
+          display: grid;
+          grid-template-columns: 1fr 390px;
+          gap: 24px;
+          align-items: start;
+        }
+        @media (max-width: 1040px) {
+          .cp-dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* White Profile Hero Card */
+        .cp-white-card {
+          background: #ffffff;
+          border-radius: 24px;
+          overflow: hidden;
+          color: #0f172a;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          margin-bottom: 24px;
+        }
+        .cp-hero-banner-wrap {
+          height: 220px;
+          width: 100%;
+          position: relative;
+          background: #e2e8f0;
+          overflow: hidden;
+        }
+        .cp-hero-banner-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .cp-bookmark-badge {
+          position: absolute;
+          top: 16px;
+          right: 18px;
+          width: 32px;
+          height: 32px;
+          background: #ffffff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+
+        .cp-hero-card-body {
+          padding: 0 32px 32px 32px;
+          position: relative;
+        }
+        .cp-avatar-floater {
+          width: 105px;
+          height: 105px;
+          border-radius: 50%;
+          border: 4px solid #ffffff;
+          background: #000000;
+          overflow: hidden;
+          margin-top: -52px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .cp-avatar-floater img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .cp-hero-details-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 24px;
+          margin-top: 16px;
+          flex-wrap: wrap;
+        }
+        .cp-candidate-title {
+          font-size: 24px;
+          font-weight: 800;
+          letter-spacing: -0.01em;
+          color: #0f172a;
+          margin: 0 0 4px 0;
+        }
+        .cp-candidate-meta {
+          font-size: 13px;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .cp-candidate-class {
+          font-size: 12px;
+          color: #64748b;
+          margin-top: 4px;
+        }
+
+        .cp-target-box {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          text-align: right;
+        }
+        @media (max-width: 640px) {
+          .cp-target-box {
+            text-align: left;
+          }
+        }
+        .cp-track-pill-container {
+          display: flex;
+          justify-content: flex-end;
+        }
+        @media (max-width: 640px) {
+          .cp-track-pill-container {
+            justify-content: flex-start;
+          }
+        }
+        .cp-pill-track {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 12px;
+          border-radius: 14px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          color: #334155;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .cp-target-label {
+          font-size: 10px;
+          font-weight: 800;
+          color: #94a3b8;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .cp-target-pill-group {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          justify-content: flex-end;
+        }
+        @media (max-width: 640px) {
+          .cp-target-pill-group {
+            justify-content: flex-start;
+          }
+        }
+        .cp-target-pill-green {
+          font-size: 11px;
+          font-weight: 700;
+          background: #ecfdf5;
+          color: #059669;
+          padding: 3px 10px;
+          border-radius: 8px;
+        }
+        .cp-target-pill-grey {
+          font-size: 11px;
+          font-weight: 600;
+          background: #f1f5f9;
+          color: #475569;
+          padding: 3px 10px;
+          border-radius: 8px;
+        }
+        .cp-focus-val {
+          font-size: 11px;
+          font-weight: 600;
+          background: #f8fafc;
+          padding: 2px 8px;
+          border-radius: 6px;
+          color: #475569;
+          display: inline-block;
+        }
+
+        .cp-hero-bottom-bar {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          border-top: 1px solid #f1f5f9;
+          margin-top: 24px;
+          padding-top: 20px;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        .cp-stat-row {
+          display: flex;
+          gap: 32px;
+        }
+        .cp-num-stat {
+          display: flex;
+          flex-direction: column;
+        }
+        .cp-num-stat-val {
+          font-size: 18px;
+          font-weight: 800;
+          color: #0f172a;
+          display: flex;
+          align-items: center;
+          gap: 3px;
+        }
+        .cp-num-stat-label {
+          font-size: 10px;
+          font-weight: 800;
+          color: #94a3b8;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          margin-top: 2px;
+        }
+
+        .cp-btn-edit-action {
+          background: #111418;
+          color: #ffffff;
+          border: none;
+          padding: 10px 24px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .cp-btn-edit-action:hover {
+          opacity: 0.9;
+        }
+
+        /* Question Solving Heatmap Card */
+        .cp-heatmap-card {
+          background: #080c14;
+          border-radius: 20px;
+          padding: 20px 24px;
+          color: #ffffff;
+        }
+        .cp-heatmap-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .cp-heatmap-title {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #94a3b8;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .cp-heatmap-count {
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+        }
+        .cp-heatmap-grid {
+          display: grid;
+          grid-template-columns: repeat(32, 1fr);
+          grid-template-rows: repeat(5, 12px);
+          gap: 4px;
+        }
+        .cp-heat-cell {
+          border-radius: 2px;
+          width: 100%;
+          height: 100%;
+        }
+
+        /* Sidebar Cards */
+        .cp-sidebar-card {
+          background: #ffffff;
+          border-radius: 20px;
+          padding: 20px;
+          color: #0f172a;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          margin-bottom: 20px;
+        }
+        .cp-sidebar-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 14px;
+        }
+        .cp-sidebar-title-group {
+          display: flex;
+          flex-direction: column;
+        }
+        .cp-sidebar-subtag {
+          font-size: 9px;
+          font-weight: 800;
+          color: #059669;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .cp-sidebar-title {
+          font-size: 12px;
+          font-weight: 900;
+          color: #0f172a;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          margin: 0;
+        }
+        .cp-sidebar-viewall {
+          font-size: 10px;
+          font-weight: 800;
+          color: #334155;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .cp-sidebar-subcaption {
+          font-size: 10px;
+          color: #94a3b8;
+          margin: 10px 0 0 0;
+        }
+
+        .cp-avatar-thumbs {
+          display: flex;
+          gap: 10px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+        .cp-avatar-thumb-btn {
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          border: 2px solid transparent;
+          overflow: hidden;
+          cursor: pointer;
+          flex-shrink: 0;
+          padding: 0;
+          background: #f1f5f9;
+        }
+        .cp-avatar-thumb-btn.active {
+          border-color: #dc2626;
+          box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+        }
+        .cp-avatar-thumb-btn img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .cp-banner-thumbs {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .cp-banner-thumb-btn {
+          height: 64px;
+          border-radius: 10px;
+          border: 2px solid transparent;
+          overflow: hidden;
+          cursor: pointer;
+          padding: 0;
+          background: #0f172a;
+          position: relative;
+        }
+        .cp-banner-thumb-btn.active {
+          border-color: #dc2626;
+        }
+        .cp-banner-thumb-btn img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .cp-banner-thumb-label {
+          position: absolute;
+          bottom: 4px;
+          left: 6px;
+          font-size: 9px;
+          font-weight: 800;
+          color: #fff;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+        }
+
+        .cp-telemetry-card {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 16px 20px;
+          color: #0f172a;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        .cp-telemetry-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 4px;
+        }
+        .cp-telemetry-title {
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #0f172a;
+        }
+        .cp-telemetry-badge {
+          font-size: 9px;
+          font-weight: 800;
+          color: #047857;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .cp-telemetry-desc {
+          font-size: 11px;
+          color: #64748b;
+          margin: 0;
+        }
+
+        .cp-tab-content-card {
+          background: #ffffff;
+          border-radius: 24px;
+          padding: 32px;
+          color: #0f172a;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        .cp-edit-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+        @media(max-width: 640px) {
+          .cp-edit-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        .cp-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .cp-form-group.full {
+          grid-column: 1 / -1;
+        }
+        .cp-form-group label {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .cp-form-group input, .cp-form-group textarea {
+          padding: 10px 14px;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          font-size: 13px;
+          color: #0f172a;
+          outline: none;
+          background: #f8fafc;
+        }
+        .cp-form-group input:focus, .cp-form-group textarea:focus {
+          border-color: #0f172a;
+          background: #fff;
+        }
+      `}</style>
+
+      <div className="gnosis-candidate-passport-container">
+        {/* Top Header & Tabs Bar */}
+        <div className="cp-top-bar">
+          <button 
+            type="button" 
+            onClick={onBackToDashboard || (() => window.history.back())} 
+            className="cp-btn-back"
+          >
+            <ArrowLeft size={14} /> Back to Dashboard
+          </button>
+
+          <div className="cp-tab-group">
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('profile')} 
+              className={`cp-tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+            >
+              <User size={13} /> 1. Profile
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('edit')} 
+              className={`cp-tab-btn ${activeTab === 'edit' ? 'active' : ''}`}
+            >
+              <Edit3 size={13} /> 2. Edit Details
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('subscription')} 
+              className={`cp-tab-btn ${activeTab === 'subscription' ? 'active' : ''}`}
+            >
+              <CreditCard size={13} /> 3. Subscription & AI
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('target')} 
+              className={`cp-tab-btn ${activeTab === 'target' ? 'active' : ''}`}
+            >
+              <Target size={13} /> 4. Academic Target
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('security')} 
+              className={`cp-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
+            >
+              <Shield size={13} /> 5. Security & Data
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* ================= 2-COLUMN STAGE ================= */}
-      <div style={{
-        padding: '10px 14px',
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1.4fr) minmax(360px, 1fr)',
-        gap: '12px',
-        width: '100%',
-        boxSizing: 'border-box',
-        alignItems: 'start'
-      }}>
-        
-        {/* LEFT COLUMN */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
-          
-          {/* TAB 1: PROFILE OVERVIEW */}
-          {activeTab === 'profile' && (
-            <>
-              <div style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '26px',
-                border: '1px solid #e7e8e1',
-                overflow: 'hidden',
-                boxSizing: 'border-box',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-              }}>
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '220px',
-                  backgroundImage: `url('${profileData.coverUrl}')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundColor: '#18181b'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'linear-gradient(180deg, rgba(0,0,0,0.02) 20%, rgba(255,255,255,0.7) 85%, #ffffff 100%)'
-                  }} />
+        {/* Verification Alert Banner */}
+        {activeUser && !activeUser.emailVerified && (
+          <div className="cp-verify-banner">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={16} />
+              <span>
+                Your email address ({activeUser.email}) is not verified yet. Check your inbox.
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {emailNotice && <span style={{ color: '#047857' }}>{emailNotice}</span>}
+              <button 
+                type="button" 
+                onClick={handleResendVerification} 
+                disabled={resendingEmail}
+                className="cp-verify-btn"
+              >
+                {resendingEmail ? 'Sending...' : 'Resend Link'}
+              </button>
+            </div>
+          </div>
+        )}
 
-                  <button
-                    onClick={() => setProfileData(p => ({ ...p, isBookmarked: !p.isBookmarked }))}
-                    style={{
-                      position: 'absolute',
-                      top: '14px',
-                      right: '14px',
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(255,255,255,0.92)',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: profileData.isBookmarked ? '#14532d' : '#71717a',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                    }}
-                  >
-                    <Bookmark size={16} fill={profileData.isBookmarked ? '#14532d' : 'none'} />
-                  </button>
+        {/* TAB 1: Main Profile View */}
+        {activeTab === 'profile' && (
+          <div className="cp-dashboard-grid">
+            <div>
+              <div className="cp-white-card">
+                <div className="cp-hero-banner-wrap">
+                  <img src={profile.banner} alt="Candidate Banner" />
+                  <div className="cp-bookmark-badge">
+                    <Bookmark size={14} color="#000" />
+                  </div>
                 </div>
 
-                <div style={{ padding: '0 24px 22px 24px' }}>
-                  <div style={{
-                    position: 'relative',
-                    marginTop: '-56px',
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    justifyContent: 'space-between',
-                    marginBottom: '14px'
-                  }}>
-                    <div style={{
-                      width: '100px',
-                      height: '100px',
-                      borderRadius: '50%',
-                      border: '4px solid #ffffff',
-                      boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-                      overflow: 'hidden',
-                      backgroundColor: '#fed7aa',
-                      flexShrink: 0
-                    }}>
-                      <img 
-                        src={profileData.avatarUrl} 
-                        alt="PFP" 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      />
-                    </div>
-
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      backgroundColor: '#f5f5f1',
-                      padding: '6px 14px',
-                      borderRadius: '9999px',
-                      border: '1px solid #e7e8e1'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Atom size={11} color="#1d4ed8" />
-                        </span>
-                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FlaskConical size={11} color="#be185d" />
-                        </span>
-                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Calculator size={11} color="#b45309" />
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '10.5px', fontWeight: 800, color: '#18181b', ...michromaStyle }}>
-                        PCM Track
-                      </span>
-                    </div>
+                <div className="cp-hero-card-body">
+                  <div className="cp-avatar-floater">
+                    <img src={profile.avatar} alt={profile.name} />
                   </div>
 
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1.2fr 1fr',
-                    gap: '20px',
-                    alignItems: 'start',
-                    marginBottom: '20px'
-                  }}>
+                  <div className="cp-hero-details-row">
                     <div>
-                      <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#18181b', margin: 0, ...michromaStyle }}>
-                        {profileData.name}
-                      </h2>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#71717a', fontSize: '11.5px', margin: '4px 0' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <MapPin size={12} color="#15803d" />
-                          {profileData.location}
-                        </span>
+                      <h1 className="cp-candidate-title">{profile.name}</h1>
+                      <div className="cp-candidate-meta">
+                        <span>📍 {profile.location || 'Location unset'}</span>
                         <span>•</span>
-                        <span style={{ color: '#15803d', fontWeight: 800 }}>@{profileData.handle}</span>
+                        <span>@{profile.handle}</span>
                       </div>
-                      <p style={{ fontSize: '12px', color: '#52525b', lineHeight: 1.45, margin: '6px 0 0 0' }}>
-                        {profileData.description}
-                      </p>
+                      <div className="cp-candidate-class">{profile.academicClass}</div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div>
-                        <span style={{ fontSize: '10px', fontWeight: 800, color: '#8e9089', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                          TARGET EXAM
+                    <div className="cp-target-box">
+                      <div className="cp-track-pill-container">
+                        <span className="cp-pill-track">
+                          <span>⚛️ 🧪 🧮</span> {profile.streamTrack}
                         </span>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 800, backgroundColor: '#eef9f2', color: '#14532d', padding: '4px 10px', borderRadius: '8px', border: '1px solid #dcfce7' }}>
-                            {profileData.targetExam}
-                          </span>
-                          <span style={{ fontSize: '11px', fontWeight: 700, backgroundColor: '#f4f4f5', color: '#52525b', padding: '4px 10px', borderRadius: '8px' }}>
-                            CBSE Class 11
-                          </span>
+                      </div>
+                      <div>
+                        <div className="cp-target-label">Target Exam</div>
+                        <div className="cp-target-pill-group">
+                          <span className="cp-target-pill-green">{profile.targetExam}</span>
+                          {profile.subTarget && (
+                            <span className="cp-target-pill-grey">{profile.subTarget}</span>
+                          )}
                         </div>
                       </div>
-
                       <div>
-                        <span style={{ fontSize: '10px', fontWeight: 800, color: '#8e9089', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                          FOCUS TOPIC
-                        </span>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                          <span style={{ fontSize: '10.5px', fontWeight: 600, backgroundColor: '#f4f4f5', color: '#3f3f46', padding: '3px 8px', borderRadius: '6px' }}>
-                            {profileData.weakSubject}
-                          </span>
-                        </div>
+                        <div className="cp-target-label">Focus Topic</div>
+                        <div className="cp-focus-val">{profile.focusTopic || 'General Revision'}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    paddingTop: '16px',
-                    borderTop: '1px solid #ebece6'
-                  }}>
-                    <div style={{ paddingRight: '20px', borderRight: '1px solid #ebece6' }}>
-                      <div style={{ fontSize: '16px', color: '#18181b', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', ...michromaStyle }}>
-                        <span style={{ color: '#eab308' }}>★</span> {profileData.rating}
+                  <div className="cp-hero-bottom-bar">
+                    <div className="cp-stat-row">
+                      <div className="cp-num-stat">
+                        <span className="cp-num-stat-val">★ {profile.rating || '4.8'}</span>
+                        <span className="cp-num-stat-label">Rating</span>
                       </div>
-                      <span style={{ fontSize: '10px', color: '#a1a1aa', fontWeight: 700, ...michromaStyle }}>RATING</span>
+                      <div className="cp-num-stat">
+                        <span className="cp-num-stat-val">{profile.durationDays || 180} Days</span>
+                        <span className="cp-num-stat-label">Duration</span>
+                      </div>
+                      <div className="cp-num-stat">
+                        <span className="cp-num-stat-val">{profile.percentile || '99.4 %/oile'}</span>
+                        <span className="cp-num-stat-label">Percentile</span>
+                      </div>
                     </div>
 
-                    <div style={{ paddingRight: '20px', borderRight: '1px solid #ebece6' }}>
-                      <div style={{ fontSize: '16px', color: '#18181b', fontWeight: 900, ...michromaStyle }}>
-                        {profileData.duration}
-                      </div>
-                      <span style={{ fontSize: '10px', color: '#a1a1aa', fontWeight: 700, ...michromaStyle }}>DURATION</span>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: '16px', color: '#18181b', fontWeight: 900, ...michromaStyle }}>
-                        {profileData.targetPercentile}
-                      </div>
-                      <span style={{ fontSize: '10px', color: '#a1a1aa', fontWeight: 700, ...michromaStyle }}>PERCENTILE</span>
-                    </div>
-
-                    <button
-                      onClick={() => setActiveTab('edit_details')}
-                      style={{
-                        marginLeft: 'auto',
-                        padding: '11px 26px',
-                        borderRadius: '9999px',
-                        backgroundColor: '#18181b',
-                        color: '#ffffff',
-                        border: 'none',
-                        fontWeight: 800,
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        ...michromaStyle
-                      }}
+                    <button 
+                      type="button" 
+                      onClick={() => setActiveTab('edit')} 
+                      className="cp-btn-edit-action"
                     >
-                      EDIT DETAILS
+                      Edit Details
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Commit Matrix */}
-              <div style={{
-                backgroundColor: '#0d1117',
-                borderRadius: '24px',
-                border: '1px solid #30363d',
-                padding: '18px 22px',
-                boxSizing: 'border-box',
-                color: '#c9d1d9'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <GitCommit size={16} color="#39d353" />
-                    <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#f0f6fc', margin: 0, ...michromaStyle }}>
-                      QUESTION SOLVING REPOSITORY (180 DAYS)
-                    </h4>
+              {/* Question Solving Repository Heatmap */}
+              <div className="cp-heatmap-card">
+                <div className="cp-heatmap-header">
+                  <div className="cp-heatmap-title">
+                    <span style={{ color: '#26a641' }}>✦</span> Question Solving Repository ({profile.durationDays || 180} Days)
                   </div>
-                  <span style={{ fontSize: '10.5px', color: '#8b949e', ...michromaStyle }}>
-                    {profileData.pyqsSolved} PYQs Commits
+                  <div className="cp-heatmap-count">{profile.pyqsCommitted || 540} PYQs Commits</div>
+                </div>
+
+                <div className="cp-heatmap-grid">
+                  {heatmapSquares.map((color, idx) => (
+                    <div key={idx} className="cp-heat-cell" style={{ backgroundColor: color }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Avatar Collection + Banner Collection + Cloud Status */}
+            <div>
+              <div className="cp-sidebar-card">
+                <div className="cp-sidebar-head">
+                  <div className="cp-sidebar-title-group">
+                    <span className="cp-sidebar-subtag">Public/Avatar Collection</span>
+                    <h3 className="cp-sidebar-title">Avatar Collection</h3>
+                  </div>
+                  <span className="cp-sidebar-viewall">View All (11) &gt;</span>
+                </div>
+
+                <div className="cp-avatar-thumbs">
+                  {AVATAR_COLLECTION.map((url, i) => (
+                    <button 
+                      key={i} 
+                      type="button" 
+                      onClick={() => selectAvatar(url)}
+                      className={`cp-avatar-thumb-btn ${profile.avatar === url ? 'active' : ''}`}
+                    >
+                      <img src={url} alt={`Avatar ${i + 1}`} />
+                    </button>
+                  ))}
+                </div>
+                <p className="cp-sidebar-subcaption">Instant auto-save: click any avatar icon to apply immediately.</p>
+              </div>
+
+              <div className="cp-sidebar-card">
+                <div className="cp-sidebar-head">
+                  <div className="cp-sidebar-title-group">
+                    <span className="cp-sidebar-subtag">Public/Banners Collection</span>
+                    <h3 className="cp-sidebar-title">Banner Collection</h3>
+                  </div>
+                  <span className="cp-sidebar-viewall">View All (9) &gt;</span>
+                </div>
+
+                <div className="cp-banner-thumbs">
+                  {BANNER_COLLECTION.map((ban, i) => (
+                    <button 
+                      key={i} 
+                      type="button" 
+                      onClick={() => selectBanner(ban.url)}
+                      className={`cp-banner-thumb-btn ${profile.banner === ban.url ? 'active' : ''}`}
+                    >
+                      <img src={ban.url} alt={ban.name} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="cp-telemetry-card">
+                <div className="cp-telemetry-head">
+                  <span className="cp-telemetry-title">Cloud Telemetry</span>
+                  <span className="cp-telemetry-badge">
+                    {saveStatus === 'synced' ? '✓ Synced to Cloud' : saveStatus === 'syncing' ? 'Syncing...' : 'Firebase Auth'}
                   </span>
                 </div>
-
-                <div style={{ overflowX: 'auto', paddingBottom: '4px' }}>
-                  <div style={{ display: 'flex', gap: '3px' }}>
-                    {commitGrid.map((week, wIdx) => (
-                      <div key={wIdx} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {week.map((d, dIdx) => (
-                          <div
-                            key={dIdx}
-                            title={`Day activity: ${d.count} questions committed`}
-                            style={{
-                              width: '12px',
-                              height: '12px',
-                              borderRadius: '2.5px',
-                              backgroundColor: GITHUB_GREENS[d.level],
-                              border: d.level === 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                              cursor: 'pointer'
-                            }}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px', marginTop: '10px', fontSize: '10px', color: '#8b949e' }}>
-                  <span style={{ ...michromaStyle, fontSize: '9px' }}>LESS</span>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: GITHUB_GREENS[0] }} />
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: GITHUB_GREENS[1] }} />
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: GITHUB_GREENS[2] }} />
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: GITHUB_GREENS[3] }} />
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: GITHUB_GREENS[4] }} />
-                  <span style={{ ...michromaStyle, fontSize: '9px' }}>MORE</span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* TAB 2: EDIT DETAILS */}
-          {activeTab === 'edit_details' && (
-            <div style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '26px',
-              border: '1px solid #e7e8e1',
-              padding: '24px',
-              boxSizing: 'border-box',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>STUDENT LEDGER</span>
-                  <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                    EDIT CANDIDATE DETAILS
-                  </h3>
-                </div>
-                {saveSuccess && (
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', backgroundColor: '#eef9f2', padding: '4px 12px', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '4px', ...michromaStyle }}>
-                    <CheckCircle2 size={13} /> SAVED
-                  </span>
-                )}
-              </div>
-
-              <form onSubmit={handleSaveDetails} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#71717a', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                      FULL NAME
-                    </label>
-                    <input 
-                      type="text"
-                      value={formName}
-                      onChange={e => setFormName(e.target.value)}
-                      placeholder="e.g. Tanishq Sood"
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        backgroundColor: '#f5f5f1',
-                        border: '1px solid #e7e8e1',
-                        outline: 'none',
-                        fontSize: '13px',
-                        color: '#18181b',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#71717a', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                      USERNAME
-                    </label>
-                    <input 
-                      type="text"
-                      value={formHandle}
-                      onChange={e => setFormHandle(e.target.value)}
-                      placeholder="e.g. tanishq_098"
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        backgroundColor: '#f5f5f1',
-                        border: '1px solid #e7e8e1',
-                        outline: 'none',
-                        fontSize: '13px',
-                        color: '#18181b',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#71717a', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                      LOCATION
-                    </label>
-                    <input 
-                      type="text"
-                      value={formLocation}
-                      onChange={e => setFormLocation(e.target.value)}
-                      placeholder="e.g. Delhi, India"
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        backgroundColor: '#f5f5f1',
-                        border: '1px solid #e7e8e1',
-                        outline: 'none',
-                        fontSize: '13px',
-                        color: '#18181b',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#71717a', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                      TARGET EXAM
-                    </label>
-                    <input 
-                      type="text"
-                      value={formExam}
-                      onChange={e => setFormExam(e.target.value)}
-                      placeholder="e.g. JEE Advanced 2027"
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        backgroundColor: '#f5f5f1',
-                        border: '1px solid #e7e8e1',
-                        outline: 'none',
-                        fontSize: '13px',
-                        color: '#18181b',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#71717a', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                    HEADLINE / ROLE
-                  </label>
-                  <input 
-                    type="text"
-                    value={formRole}
-                    onChange={e => setFormRole(e.target.value)}
-                    placeholder="e.g. Class 11 PCM Aspirant"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
-                      backgroundColor: '#f5f5f1',
-                      border: '1px solid #e7e8e1',
-                      outline: 'none',
-                      fontSize: '13px',
-                      color: '#18181b',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#71717a', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                    REVISION FOCUS TOPIC
-                  </label>
-                  <select
-                    value={formWeakSubject}
-                    onChange={e => setFormWeakSubject(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
-                      backgroundColor: '#f5f5f1',
-                      border: '1px solid #e7e8e1',
-                      outline: 'none',
-                      fontSize: '13px',
-                      color: '#18181b',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="Physics - Mechanics">Physics - Mechanics & Rotational Motion</option>
-                    <option value="Physics - Optics">Physics - Wave Optics & Ray Optics</option>
-                    <option value="Chemistry - Organic">Chemistry - Reaction Mechanisms & Functional Groups</option>
-                    <option value="Chemistry - Physical">Chemistry - Thermodynamics & Equilibrium</option>
-                    <option value="Maths - Calculus">Maths - Differential & Integral Calculus</option>
-                    <option value="Maths - Vectors & 3D">Maths - Vectors & 3D Geometry</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#71717a', display: 'block', marginBottom: '4px', ...michromaStyle }}>
-                    BIO / DESCRIPTION
-                  </label>
-                  <textarea 
-                    rows={4}
-                    value={formDesc}
-                    onChange={e => setFormDesc(e.target.value)}
-                    placeholder="Write a brief student intro..."
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
-                      backgroundColor: '#f5f5f1',
-                      border: '1px solid #e7e8e1',
-                      outline: 'none',
-                      fontSize: '13px',
-                      color: '#18181b',
-                      resize: 'none',
-                      boxSizing: 'border-box',
-                      fontFamily: 'inherit'
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={handleResetForm}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '10px 18px',
-                      borderRadius: '12px',
-                      backgroundColor: '#f5f5f1',
-                      border: '1px solid #e7e8e1',
-                      color: '#18181b',
-                      fontSize: '11.5px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      ...michromaStyle
-                    }}
-                  >
-                    <RotateCcw size={13} />
-                    <span>RESET</span>
-                  </button>
-
-                  <button
-                    type="submit"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '10px 24px',
-                      borderRadius: '12px',
-                      backgroundColor: 'var(--emerald-800)',
-                      color: '#ffffff',
-                      border: 'none',
-                      fontSize: '11.5px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      ...michromaStyle
-                    }}
-                  >
-                    <Save size={13} />
-                    <span>SAVE CHANGES</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* TAB 3: SUBSCRIPTION & AI */}
-          {activeTab === 'subscription' && (
-            <div style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '26px',
-              border: '1px solid #e7e8e1',
-              padding: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
-            }}>
-              <div>
-                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>TIER STATUS</span>
-                <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                  AI DOUBTS & MEMBERSHIP
-                </h3>
-              </div>
-
-              <div style={{ padding: '16px', borderRadius: '16px', backgroundColor: '#eef9f2', border: '1px solid #bbf7d0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: '9px', fontWeight: 900, color: '#14532d', ...michromaStyle }}>CURRENT PASS</span>
-                  <div style={{ fontSize: '14px', fontWeight: 900, color: '#14532d', ...michromaStyle }}>GNOSIS PRO - ASPIRANT PASS</div>
-                  <span style={{ fontSize: '11px', color: '#15803d' }}>Renews Nov 27, 2026</span>
-                </div>
-                <ShieldCheck size={32} color="#15803d" />
-              </div>
-
-              <div style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#f5f5f1' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 800, marginBottom: '6px' }}>
-                  <span style={{ color: '#18181b', ...michromaStyle }}>DAILY SOCRATIC HINTS</span>
-                  <span style={{ color: '#15803d', ...michromaStyle }}>18 / 25 USED</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: '#e4e4e7', borderRadius: '9999px', overflow: 'hidden' }}>
-                  <div style={{ width: '72%', height: '100%', backgroundColor: '#15803d', borderRadius: '9999px' }} />
-                </div>
-                <span style={{ fontSize: '9.5px', color: '#71717a', marginTop: '4px', display: 'block' }}>Resets at midnight IST daily</span>
-              </div>
-
-              <div style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#f5f5f1' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 800, marginBottom: '6px' }}>
-                  <span style={{ color: '#18181b', ...michromaStyle }}>DEEP IMAGE SCANS (OCR)</span>
-                  <span style={{ color: '#0369a1', ...michromaStyle }}>3 / 5 REMAINING</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: '#e4e4e7', borderRadius: '9999px', overflow: 'hidden' }}>
-                  <div style={{ width: '60%', height: '100%', backgroundColor: '#0284c7', borderRadius: '9999px' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '12px',
-                  backgroundColor: '#18181b',
-                  color: '#ffffff',
-                  border: 'none',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  ...michromaStyle
-                }}>
-                  UPGRADE PLAN • ₹199/MO
-                </button>
-                <button style={{
-                  padding: '12px 18px',
-                  borderRadius: '12px',
-                  backgroundColor: '#ffffff',
-                  color: '#18181b',
-                  border: '1px solid #e4e4e7',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  ...michromaStyle
-                }}>
-                  INVOICES
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: ACADEMIC TARGET */}
-          {activeTab === 'academic' && (
-            <div style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '24px',
-              border: '1px solid #e7e8e1',
-              padding: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
-            }}>
-              <div>
-                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>RADAR</span>
-                <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                  ACADEMIC GOALS
-                </h3>
-              </div>
-
-              <div style={{
-                padding: '16px',
-                borderRadius: '16px',
-                backgroundColor: '#18181b',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <div>
-                  <span style={{ fontSize: '9px', color: '#a1a1aa', ...michromaStyle }}>EXAM COUNTDOWN</span>
-                  <div style={{ fontSize: '20px', fontWeight: 900, color: '#39d353', marginTop: '2px', ...michromaStyle }}>
-                    450 DAYS REMAINING
-                  </div>
-                  <span style={{ fontSize: '11px', color: '#d4d4d8' }}>To {profileData.targetExam}</span>
-                </div>
-                <Target size={34} color="#39d353" />
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: SECURITY & DATA */}
-          {activeTab === 'security' && (
-            <div style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '24px',
-              border: '1px solid #e7e8e1',
-              padding: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
-            }}>
-              <div>
-                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#b91c1c', ...michromaStyle }}>SECURITY</span>
-                <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                  AUDIT & CONTROLS
-                </h3>
-              </div>
-
-              <div style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#f5f5f1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#18181b', ...michromaStyle }}>GOOGLE SIGN-IN</span>
-                  <div style={{ fontSize: '11px', color: '#71717a' }}>{profileData.email}</div>
-                </div>
-                <span style={{ fontSize: '10px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>CONNECTED</span>
-              </div>
-
-              <div style={{ padding: '16px', borderRadius: '16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#b91c1c', fontWeight: 900, fontSize: '12px', ...michromaStyle }}>
-                  <AlertTriangle size={15} />
-                  <span>CLEAR MISTAKE VAULT HISTORY</span>
-                </div>
-                <p style={{ fontSize: '11px', color: '#7f1d1d', margin: '4px 0 12px 0' }}>
-                  Wipes your incorrect attempts, time-tracker history, and test telemetry.
+                <p className="cp-telemetry-desc">
+                  Profile modifications are saved automatically to local memory and your candidate passport.
                 </p>
-                <button
-                  onClick={() => {
-                    localStorage.removeItem('gnosis_mistake_vault');
-                    alert('Mistake vault cleared!');
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    backgroundColor: '#dc2626',
-                    color: '#ffffff',
-                    border: 'none',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    ...michromaStyle
-                  }}
-                >
-                  RESET STATISTICS
-                </button>
               </div>
-
-              <button
-                onClick={handleSignOutTrigger}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #fee2e2',
-                  color: '#dc2626',
-                  fontSize: '11.5px',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  ...michromaStyle
-                }}
-              >
-                <LogOut size={15} />
-                <span>SIGN OUT OF GNOSIS</span>
-              </button>
-            </div>
-          )}
-
-        </div>
-
-        {/* RIGHT COLUMN: CAROUSELS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          
-          {/* AVATARS CAROUSEL */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '26px',
-            border: '1px solid #e7e8e1',
-            padding: '20px',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div>
-                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>PUBLIC/AVATAR[cite: 3]</span>
-                <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                  AVATAR COLLECTION
-                </h4>
-              </div>
-              <button
-                onClick={() => setViewAllType('avatars')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  backgroundColor: '#f5f5f1',
-                  border: '1px solid #e7e8e1',
-                  borderRadius: '9999px',
-                  padding: '5px 12px',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  color: '#18181b',
-                  cursor: 'pointer',
-                  ...michromaStyle
-                }}
-              >
-                <span>VIEW ALL (11)</span>
-                <ChevronRight size={13} />
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-              {LOCAL_AVATARS.slice(0, 5).map(av => {
-                const isSelected = profileData.avatarUrl === av.url;
-                return (
-                  <div
-                    key={av.id}
-                    onClick={() => selectAvatar(av.url)}
-                    title="Click to apply"
-                    style={{
-                      aspectRatio: '1/1',
-                      borderRadius: '50%',
-                      border: isSelected ? '3px solid #15803d' : '2px solid #e4e4e7',
-                      overflow: 'hidden',
-                      cursor: 'pointer',
-                      backgroundColor: '#f5f5f1',
-                      boxShadow: isSelected ? '0 2px 10px rgba(20, 83, 45, 0.35)' : 'none',
-                      transition: 'transform 0.15s ease'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
-                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    <img src={av.url} alt={av.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                );
-              })}
-            </div>
-            <span style={{ fontSize: '10px', color: '#71717a', marginTop: '10px', display: 'block' }}>
-              Instant auto-save: click any avatar icon to apply immediately.
-            </span>
-          </div>
-
-          {/* BANNERS CAROUSEL */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '26px',
-            border: '1px solid #e7e8e1',
-            padding: '20px',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div>
-                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>PUBLIC/BANNERS[cite: 3]</span>
-                <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                  BANNER COLLECTION
-                </h4>
-              </div>
-              <button
-                onClick={() => setViewAllType('banners')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  backgroundColor: '#f5f5f1',
-                  border: '1px solid #e7e8e1',
-                  borderRadius: '9999px',
-                  padding: '5px 12px',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  color: '#18181b',
-                  cursor: 'pointer',
-                  ...michromaStyle
-                }}
-              >
-                <span>VIEW ALL (9)</span>
-                <ChevronRight size={13} />
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-              {LOCAL_BANNERS.slice(0, 4).map(ban => {
-                const isSelected = profileData.coverUrl === ban.url;
-                return (
-                  <div
-                    key={ban.id}
-                    onClick={() => selectBanner(ban.url)}
-                    title="Click to apply"
-                    style={{
-                      height: '75px',
-                      borderRadius: '14px',
-                      backgroundImage: `url('${ban.url}')`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      cursor: 'pointer',
-                      border: isSelected ? '3px solid #15803d' : '1px solid #e7e8e1',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      transition: 'transform 0.15s ease'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                  >
-                    {isSelected && (
-                      <div style={{ position: 'absolute', top: '4px', right: '4px', width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#15803d', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Check size={11} />
-                      </div>
-                    )}
-                    <span style={{ position: 'absolute', bottom: '4px', left: '6px', fontSize: '9px', color: '#ffffff', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.9)', ...michromaStyle }}>
-                      {ban.name}
-                    </span>
-                  </div>
-                );
-              })}
             </div>
           </div>
+        )}
 
-          {/* TELEMETRY CARD */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '26px',
-            border: '1px solid #e7e8e1',
-            padding: '18px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#18181b', ...michromaStyle }}>CLOUD TELEMETRY</span>
-              <span style={{ fontSize: '10px', color: '#15803d', fontWeight: 800 }}>FIREBASE AUTH</span>
-            </div>
-            <p style={{ fontSize: '11px', color: '#71717a', margin: 0, lineHeight: 1.4 }}>
-              Profile modifications are saved automatically to local memory and your candidate passport.
-            </p>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ================= MODAL: VIEW ALL ================= */}
-      {viewAllType && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(6px)',
-          zIndex: 99999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '680px',
-            maxHeight: '85vh',
-            backgroundColor: '#ffffff',
-            borderRadius: '28px',
-            padding: '24px 28px',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            overflow: 'hidden'
-          }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e7e8e1', paddingBottom: '12px' }}>
+        {/* TAB 2: Edit Details View */}
+        {activeTab === 'edit' && (
+          <div className="cp-tab-content-card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
               <div>
-                <span style={{ fontSize: '10px', fontWeight: 800, color: '#15803d', ...michromaStyle }}>AMAZON-STYLE BROWSER</span>
-                <h3 style={{ fontSize: '16px', fontWeight: 900, color: '#18181b', margin: '2px 0 0 0', ...michromaStyle }}>
-                  {viewAllType === 'avatars' ? 'ALL 11 AVATARS (/public/avatar/)' : 'ALL 9 BANNERS (/public/banners/)'}[cite: 3]
-                </h3>
+                <h2 style={{ fontSize: 20, fontWeight: 900, margin: '0 0 4px 0' }}>Edit Candidate Details</h2>
+                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>Update your handle, target credentials, and active preparation topic.</p>
               </div>
+
               <button 
-                onClick={() => setViewAllType(null)} 
-                style={{ 
-                  width: '32px', 
-                  height: '32px', 
-                  borderRadius: '50%', 
-                  backgroundColor: '#f5f5f1', 
-                  border: 'none', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  cursor: 'pointer',
-                  color: '#18181b'
-                }}
-              >
-                <X size={17} />
-              </button>
-            </div>
-
-            <div style={{ overflowY: 'auto', paddingRight: '4px', flex: 1 }}>
-              {viewAllType === 'avatars' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
-                  {LOCAL_AVATARS.map(av => {
-                    const isSelected = profileData.avatarUrl === av.url;
-                    return (
-                      <div
-                        key={av.id}
-                        onClick={() => { selectAvatar(av.url); setViewAllType(null); }}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '10px',
-                          borderRadius: '16px',
-                          border: isSelected ? '3px solid #15803d' : '1px solid #e7e8e1',
-                          backgroundColor: isSelected ? '#eef9f2' : '#ffffff',
-                          cursor: 'pointer',
-                          transition: 'transform 0.15s ease'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                      >
-                        <div style={{
-                          width: '74px',
-                          height: '74px',
-                          borderRadius: '50%',
-                          overflow: 'hidden',
-                          border: isSelected ? '3px solid #15803d' : '1px solid #d4d4d8',
-                          boxShadow: isSelected ? '0 4px 12px rgba(20, 83, 45, 0.3)' : 'none'
-                        }}>
-                          <img src={av.url} alt={av.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#18181b', ...michromaStyle }}>
-                          {av.name}
-                        </span>
-                        {isSelected && (
-                          <span style={{ fontSize: '9px', fontWeight: 800, color: '#15803d', backgroundColor: '#ffffff', padding: '2px 8px', borderRadius: '9999px' }}>
-                            ACTIVE
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                  {LOCAL_BANNERS.map(ban => {
-                    const isSelected = profileData.coverUrl === ban.url;
-                    return (
-                      <div
-                        key={ban.id}
-                        onClick={() => { selectBanner(ban.url); setViewAllType(null); }}
-                        style={{
-                          height: '110px',
-                          borderRadius: '16px',
-                          backgroundImage: `url('${ban.url}')`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          cursor: 'pointer',
-                          border: isSelected ? '3px solid #15803d' : '1px solid #e7e8e1',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          boxShadow: isSelected ? '0 4px 16px rgba(20, 83, 45, 0.35)' : 'none',
-                          transition: 'transform 0.15s ease'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                      >
-                        {isSelected && (
-                          <div style={{ position: 'absolute', top: '6px', right: '6px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#15803d', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Check size={12} />
-                          </div>
-                        )}
-                        <span style={{ position: 'absolute', bottom: '6px', left: '8px', fontSize: '10px', color: '#ffffff', fontWeight: 900, textShadow: '0 1px 4px rgba(0,0,0,0.9)', ...michromaStyle }}>
-                          {ban.name}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px' }}>
-              <button
-                onClick={() => setViewAllType(null)}
+                type="button" 
+                onClick={handleFormSave} 
                 style={{
-                  padding: '8px 20px',
-                  borderRadius: '9999px',
-                  backgroundColor: '#18181b',
-                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: '#000000',
+                  color: '#fff',
                   border: 'none',
-                  fontSize: '11px',
+                  padding: '10px 22px',
+                  borderRadius: 20,
+                  fontSize: 12,
                   fontWeight: 800,
-                  cursor: 'pointer',
-                  ...michromaStyle
+                  cursor: 'pointer'
                 }}
               >
-                CLOSE
+                <Save size={15} /> Save Changes
               </button>
+            </div>
+
+            <form onSubmit={handleFormSave} className="cp-edit-grid">
+              <div className="cp-form-group">
+                <label>Candidate Name</label>
+                <input 
+                  type="text" 
+                  value={formData.name || ''} 
+                  placeholder="Enter candidate name"
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+                />
+              </div>
+
+              <div className="cp-form-group">
+                <label>Candidate Handle</label>
+                <input 
+                  type="text" 
+                  value={formData.handle || ''} 
+                  placeholder="handle"
+                  onChange={(e) => setFormData({ ...formData, handle: e.target.value.replace('@', '') })} 
+                />
+              </div>
+
+              <div className="cp-form-group">
+                <label>Target Examination</label>
+                <input 
+                  type="text" 
+                  value={formData.targetExam || ''} 
+                  placeholder="e.g. JEE Advanced 2027"
+                  onChange={(e) => setFormData({ ...formData, targetExam: e.target.value })} 
+                />
+              </div>
+
+              <div className="cp-form-group">
+                <label>Secondary Target</label>
+                <input 
+                  type="text" 
+                  value={formData.subTarget || ''} 
+                  placeholder="e.g. CBSE Class 11"
+                  onChange={(e) => setFormData({ ...formData, subTarget: e.target.value })} 
+                />
+              </div>
+
+              <div className="cp-form-group">
+                <label>Focus Topic</label>
+                <input 
+                  type="text" 
+                  value={formData.focusTopic || ''} 
+                  placeholder="e.g. Physics - Optics"
+                  onChange={(e) => setFormData({ ...formData, focusTopic: e.target.value })} 
+                />
+              </div>
+
+              <div className="cp-form-group">
+                <label>Academic Class / Stream</label>
+                <input 
+                  type="text" 
+                  value={formData.academicClass || ''} 
+                  placeholder="e.g. Class 11 PCM"
+                  onChange={(e) => setFormData({ ...formData, academicClass: e.target.value })} 
+                />
+              </div>
+
+              <div className="cp-form-group full">
+                <label>Location</label>
+                <input 
+                  type="text" 
+                  value={formData.location || ''} 
+                  placeholder="e.g. Delhi, India"
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })} 
+                />
+              </div>
+
+              <div className="cp-form-group full">
+                <label>Candidate Objective & Motto</label>
+                <textarea 
+                  rows={3} 
+                  value={formData.bio || ''} 
+                  placeholder="Write your study goals or test pacing strategy..."
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })} 
+                />
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 3: Subscription & AI */}
+        {activeTab === 'subscription' && (
+          <div className="cp-tab-content-card">
+            <h2 style={{ fontSize: 20, fontWeight: 900, margin: '0 0 8px 0' }}>Subscription & Socratic AI Engine</h2>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>Active tier and telemetry parameters.</p>
+            <div style={{ background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#047857' }}>ASPIRANT PASS • ACTIVE</div>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>Unlimited step-by-step hints, custom mock generations, and telemetry tracking.</div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* TAB 4: Academic Target */}
+        {activeTab === 'target' && (
+          <div className="cp-tab-content-card">
+            <h2 style={{ fontSize: 20, fontWeight: 900, margin: '0 0 8px 0' }}>Academic Target & Syllabus Matrix</h2>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>Tracking weightage and revision pacing across Physics, Chemistry, and Math.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div style={{ padding: 16, background: '#f8fafc', borderRadius: 14, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#dc2626' }}>PHYSICS</div>
+                <div style={{ fontSize: 18, fontWeight: 900, marginTop: 4 }}>Optics & Modern</div>
+              </div>
+              <div style={{ padding: 16, background: '#f8fafc', borderRadius: 14, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#2563eb' }}>CHEMISTRY</div>
+                <div style={{ fontSize: 18, fontWeight: 900, marginTop: 4 }}>Organic Mechanisms</div>
+              </div>
+              <div style={{ padding: 16, background: '#f8fafc', borderRadius: 14, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#059669' }}>MATHEMATICS</div>
+                <div style={{ fontSize: 18, fontWeight: 900, marginTop: 4 }}>Calculus & Vectors</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: Security & Data (without database path) */}
+        {activeTab === 'security' && (
+          <div className="cp-tab-content-card">
+            <h2 style={{ fontSize: 20, fontWeight: 900, margin: '0 0 8px 0' }}>Security & Telemetry Credentials</h2>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>Manage your authenticated session and candidate credentials.</p>
+            <div style={{ background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0', fontSize: 13 }}>
+              <div><strong>UID:</strong> {activeUser?.uid || 'Not signed in'}</div>
+              <div style={{ marginTop: 6 }}><strong>Email:</strong> {activeUser?.email || 'N/A'}</div>
+              <div style={{ marginTop: 6 }}>
+                <strong>Email Verified:</strong> {activeUser?.emailVerified ? '✓ Verified' : '✗ Unverified'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

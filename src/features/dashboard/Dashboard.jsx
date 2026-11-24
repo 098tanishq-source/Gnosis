@@ -42,16 +42,13 @@ import {
   List,
   ListOrdered,
   Heading2,
-  ArrowLeft
+  ArrowLeft,
+  CheckCircle2,
+  Atom
 } from 'lucide-react';
-import MockTest from '../mock-test/MockTest';
-import NcertHub from '../ncert/NcertHub';
-import VideoTunnel from '../player/VideoTunnel';
-import SocraticAI from '../socratic/SocraticAI';
 import Profile from '../profile/Profile';
 import '../../styles/tokens.css';
 
-// 10 Vibrant & Pastel Note Colors
 const COLOR_PRESETS = [
   { id: 'yellow', label: 'Buttercup', bg: '#fef9c3', border: '#fde047', text: '#854d0e', iconBg: '#fef08a' },
   { id: 'coral', label: 'Coral Peach', bg: '#ffe4e6', border: '#fecdd3', text: '#9f1239', iconBg: '#fecdd3' },
@@ -65,12 +62,17 @@ const COLOR_PRESETS = [
   { id: 'forest', label: 'Emerald Deep', bg: '#d1fae5', border: '#a7f3d0', text: '#065f46', iconBg: '#a7f3d0' }
 ];
 
+// Rich, high-yield folders preloaded across subjects
 const INITIAL_FOLDERS = [
-  { id: 'f-1', name: 'Wave Optics & Mechanics', subject: 'Physics', color: 'blue', date: '26/10/2026', pdfTitle: 'NCERT Ch 10 Optics Derivations (Official PDF)' },
-  { id: 'f-2', name: 'Organic Reaction Mechanisms', subject: 'Chemistry', color: 'coral', date: '24/10/2026', pdfTitle: 'Aldehydes & Ketones Mechanism Handout (PDF)' },
-  { id: 'f-3', name: 'Calculus & Vectors', subject: 'Mathematics', color: 'yellow', date: '21/10/2026', pdfTitle: 'Definite Integrals & Area Under Curves (PDF)' }
+  { id: 'f-1', name: 'Wave Optics & Mechanics', subject: 'Physics', color: 'blue', date: '26/10/2026', pdfTitle: 'NCERT Ch 10 Optics Derivations' },
+  { id: 'f-2', name: 'Organic Reaction Mechanisms', subject: 'Chemistry', color: 'coral', date: '24/10/2026', pdfTitle: 'Aldehydes & Ketones Reaction Handout' },
+  { id: 'f-3', name: 'Integral Calculus & Vectors', subject: 'Mathematics', color: 'yellow', date: '21/10/2026', pdfTitle: 'Definite Integrals & 3D Vectors' },
+  { id: 'f-4', name: 'Molecular Genetics & Inheritance', subject: 'Biology', color: 'mint', date: '19/10/2026', pdfTitle: 'DNA Replication & Central Dogma' },
+  { id: 'f-5', name: 'Data Structures & Algorithms', subject: 'Comp Science', color: 'slate', date: '15/10/2026', pdfTitle: 'Recursion, Stacks & Complexity Classes' },
+  { id: 'f-6', name: 'Modern Physics & Dual Nature', subject: 'Physics', color: 'lavender', date: '12/10/2026', pdfTitle: 'Photoelectric Effect & Bohr Atom' }
 ];
 
+// Rich, preloaded formula sheets & study notes
 const INITIAL_NOTES = [
   {
     id: 'n-1',
@@ -82,7 +84,7 @@ const INITIAL_NOTES = [
     color: 'yellow',
     date: '26/10/2026',
     time: '11:30 AM, Monday',
-    content: `• Path difference: Δx = d·sin(θ) ≈ d·(y/D)\n• Bright fringe: Δx = n·λ\n• Dark fringe: Δx = (2n - 1)·(λ/2)\n• Fringe width: β = (λ·D)/d\n*Note*: Immersing apparatus in water reduces β by refractive index μ.`
+    content: `• Path difference: Δx = d·sin(θ) ≈ d·(y/D)\n• Bright fringe: Δx = n·λ\n• Dark fringe: Δx = (2n - 1)·(λ/2)\n• Fringe width: β = (λ·D)/d\n*Note*: Immersing apparatus in medium of index μ contracts fringe width: β' = β/μ.`
   },
   {
     id: 'n-2',
@@ -106,10 +108,22 @@ const INITIAL_NOTES = [
     color: 'coral',
     date: '24/10/2026',
     time: '04:15 PM, Saturday',
-    content: `• Aldol Condensation:\n  - Requires at least one α-hydrogen atom.\n  - Reagent: Dilute NaOH.\n  - Forms β-hydroxy aldehyde.\n\n• Cannizzaro Reaction:\n  - Requires zero α-hydrogen (Formaldehyde, Benzaldehyde).\n  - Reagent: 50% Concentrated KOH.\n  - Disproportionation into carboxylic acid salt + primary alcohol.`
+    content: `• Aldol Condensation:\n  - Requires at least one α-hydrogen atom.\n  - Reagent: Dilute NaOH.\n  - Product: β-hydroxy aldehyde, dehydrates to α,β-unsaturated enal.\n\n• Cannizzaro Reaction:\n  - Requires zero α-hydrogen (HCHO, PhCHO).\n  - Reagent: 50% Concentrated KOH.\n  - Disproportionation into carboxylic acid salt + primary alcohol.`
   },
   {
     id: 'n-4',
+    folderId: 'f-2',
+    title: 'Markovnikov vs Anti-Markovnikov Rule',
+    subject: 'Chemistry',
+    chapter: 'Ch 13: Hydrocarbons',
+    font: 'var(--font-mono)',
+    color: 'pink',
+    date: '23/10/2026',
+    time: '05:30 PM, Friday',
+    content: `• Markovnikov Addition: Electrophile H+ attaches to carbon with more hydrogens to form the more stable carbocation (3° > 2° > 1°).\n• Peroxide Effect (Kharasch): HBr in presence of organic peroxides yields free radical Anti-Markovnikov addition. Only works with HBr, not HCl or HI.`
+  },
+  {
+    id: 'n-5',
     folderId: 'f-3',
     title: 'Integration by Parts (ILATE)',
     subject: 'Mathematics',
@@ -118,11 +132,48 @@ const INITIAL_NOTES = [
     color: 'lavender',
     date: '22/10/2026',
     time: '08:45 PM, Thursday',
-    content: `∫ u·v dx = u·∫ v dx - ∫ [ (du/dx) · ∫ v dx ] dx\n\nPriority: I (Inverse) > L (Log) > A (Algebraic) > T (Trig) > E (Exp)\nKing's Property: ∫_0^a f(x)dx = ∫_0^a f(a - x)dx.`
+    content: `∫ u·v dx = u·∫ v dx - ∫ [ (du/dx) · ∫ v dx ] dx\n\nPriority: I (Inverse) > L (Log) > A (Algebraic) > T (Trig) > E (Exp)\nKing's Property: ∫_0^a f(x)dx = ∫_0^a f(a - x)dx.\nOdd/Even Property: If f(-x) = -f(x), integral from -a to a is 0.`
+  },
+  {
+    id: 'n-6',
+    folderId: 'f-3',
+    title: 'Shortest Distance Between Skew Lines',
+    subject: 'Mathematics',
+    chapter: 'Ch 11: 3D Geometry',
+    font: 'var(--font-body)',
+    color: 'yellow',
+    date: '20/10/2026',
+    time: '07:20 PM, Tuesday',
+    content: `Lines: r = a1 + λ·b1 and r = a2 + μ·b2\n\nFormula: d = |(b1 × b2) · (a2 - a1)| / |b1 × b2|\nIf lines intersect, d = 0, meaning (b1 × b2) · (a2 - a1) = 0.`
+  },
+  {
+    id: 'n-7',
+    folderId: 'f-4',
+    title: 'DNA Replication Machinery',
+    subject: 'Biology',
+    chapter: 'Ch 6: Molecular Inheritance',
+    font: 'var(--font-body)',
+    color: 'mint',
+    date: '19/10/2026',
+    time: '03:10 PM, Monday',
+    content: `1. Helicase: Unwinds double helix at replication origin.\n2. Primase: Synthesizes short RNA starter primers.\n3. DNA Polymerase III: Elongates continuous leading strand and Okazaki fragments in 5' to 3' polarity.\n4. DNA Ligase: Forms phosphodiester bonds sealing discontinuous lagging fragments.`
+  },
+  {
+    id: 'n-8',
+    folderId: 'f-5',
+    title: 'Asymptotic Analysis & Big O',
+    subject: 'Comp Science',
+    chapter: 'Unit 2: Computational Complexity',
+    font: 'var(--font-mono)',
+    color: 'slate',
+    date: '15/10/2026',
+    time: '06:30 PM, Wednesday',
+    content: `• Hierarchy: O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ)\n• Binary Search: O(log n)\n• MergeSort: Always O(n log n)\n• QuickSort: Average O(n log n), Worst-case O(n²)\n• Hash Table Lookup: O(1) expected average`
   }
 ];
 
 const DEFAULT_SUBJECTS = [
+  { id: 'all', name: 'All Subjects' },
   { id: 'phy', name: 'Physics' },
   { id: 'chem', name: 'Chemistry' },
   { id: 'math', name: 'Mathematics' },
@@ -131,20 +182,55 @@ const DEFAULT_SUBJECTS = [
 ];
 
 export default function Dashboard({ onNavigate, user, onLogout }) {
-  // Defaults to 'profile' view immediately upon login
-  const [activeView, setActiveView] = useState('profile'); 
+  const baseUrl = import.meta.env.BASE_URL || '/';
+
+  // Navigation state
+  const [activeView, setActiveView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Subject Carousel State
+  // Dynamic Avatar State
+  const [currentAvatar, setCurrentAvatar] = useState(() => {
+    return (
+      localStorage.getItem('gnosis_active_avatar') ||
+      user?.photoURL ||
+      `${baseUrl}avatar/avatar1.jpg`
+    );
+  });
+
+  useEffect(() => {
+    const syncAvatar = () => {
+      const saved = localStorage.getItem('gnosis_active_avatar');
+      if (saved) setCurrentAvatar(saved);
+      else if (user?.photoURL) setCurrentAvatar(user.photoURL);
+    };
+
+    window.addEventListener('gnosis_profile_updated', syncAvatar);
+    window.addEventListener('storage', syncAvatar);
+
+    return () => {
+      window.removeEventListener('gnosis_profile_updated', syncAvatar);
+      window.removeEventListener('storage', syncAvatar);
+    };
+  }, [user]);
+
+  // Notifications State
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'JEE Main 2027 Full Mock Ready', time: '10m ago', unread: true },
+    { id: 2, title: 'Wave Optics Telemetry Synced', time: '1h ago', unread: true },
+    { id: 3, title: 'Study streak milestone: 12 days continuous', time: '1d ago', unread: false }
+  ]);
+
+  // Subjects Filter
   const [subjects, setSubjects] = useState(DEFAULT_SUBJECTS);
-  const [selectedSubject, setSelectedSubject] = useState('phy');
+  const [selectedSubject, setSelectedSubject] = useState('all');
 
   // Time Tracker State
   const [trackerSeconds, setTrackerSeconds] = useState(5048);
   const [isTrackerRunning, setIsTrackerRunning] = useState(true);
   const [selectedDate, setSelectedDate] = useState(28);
 
-  // Notes & Folders State
+  // Notes & Folders State with fallback persistence
   const [folders, setFolders] = useState(() => {
     try {
       const s = localStorage.getItem('gnosis_folders_v3');
@@ -171,13 +257,41 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
     localStorage.setItem('gnosis_notes_v3', JSON.stringify(notes));
   }, [notes]);
 
+  // Upload/Sync preloaded notes & folders to Cloud Firestore if logged in
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const syncCloudNotes = async () => {
+      try {
+        const { db } = await import('../../styles/lib/firebase');
+        const { doc, getDoc, setDoc } = await import('firebase/firestore');
+        const userRef = doc(db, 'users', user.uid);
+        const snap = await getDoc(userRef);
+
+        if (snap.exists() && snap.data().notes && snap.data().notes.length > 0) {
+          setNotes(snap.data().notes);
+          if (snap.data().folders && snap.data().folders.length > 0) {
+            setFolders(snap.data().folders);
+          }
+        } else {
+          // Initialize user document with rich preloaded folders & notes
+          await setDoc(userRef, { notes, folders }, { merge: true });
+        }
+      } catch (e) {
+        console.warn('Cloud notes sync fallback:', e);
+      }
+    };
+
+    syncCloudNotes();
+  }, [user?.uid]);
+
   const [activeFolderId, setActiveFolderId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
 
-  // Note Modal Fields
+  // Modal Inputs
   const [noteTitle, setNoteTitle] = useState('');
   const [noteSubject, setNoteSubject] = useState('Physics');
   const [noteChapter, setNoteChapter] = useState('');
@@ -186,12 +300,9 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
   const [noteColor, setNoteColor] = useState('yellow');
   const [noteFolderId, setNoteFolderId] = useState('f-1');
 
-  // Folder Modal Fields
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderSubject, setNewFolderSubject] = useState('Physics');
   const [newFolderColor, setNewFolderColor] = useState('mint');
-
-  const baseUrl = import.meta.env.BASE_URL || '/';
 
   useEffect(() => {
     let timer = null;
@@ -216,21 +327,47 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
   const handleAddBooklet = () => {
     const name = window.prompt('Enter new subject / booklet title:');
     if (name && name.trim()) {
-      const newSub = { id: `booklet_${Date.now()}`, name: name.trim() };
+      const clean = name.trim();
+      const newSub = { id: `sub_${Date.now()}`, name: clean };
       setSubjects(prev => [...prev, newSub]);
       setSelectedSubject(newSub.id);
+
+      const newF = {
+        id: `f_${Date.now()}`,
+        name: `${clean} High-Yield Notes`,
+        subject: clean,
+        color: 'mint',
+        date: 'Today',
+        pdfTitle: `${clean} Reference Handout`
+      };
+      setFolders(prev => [newF, ...prev]);
+
+      const newN = {
+        id: `n_${Date.now()}`,
+        folderId: newF.id,
+        title: `${clean} Core Formulas`,
+        subject: clean,
+        chapter: 'Unit 1: Foundations',
+        font: 'var(--font-body)',
+        color: 'mint',
+        date: 'Today',
+        time: 'Just now',
+        content: `Foundational study notes, key formulas, and derivations for ${clean}.`
+      };
+      setNotes(prev => [newN, ...prev]);
     }
   };
 
   const openNewNoteModal = () => {
     setEditingNote(null);
     setNoteTitle('');
-    setNoteSubject('Physics');
+    const curSubObj = subjects.find(s => s.id === selectedSubject);
+    setNoteSubject(curSubObj && curSubObj.id !== 'all' ? curSubObj.name : 'Physics');
     setNoteChapter('');
     setNoteContent('');
     setNoteFont('var(--font-body)');
     setNoteColor('yellow');
-    setNoteFolderId(activeFolderId || 'f-1');
+    setNoteFolderId(activeFolderId || folders[0]?.id || 'f-1');
     setIsNoteModalOpen(true);
   };
 
@@ -309,14 +446,21 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
       subject: newFolderSubject,
       color: newFolderColor,
       date: dateStr,
-      pdfTitle: `${newFolderName.trim()} High-Yield Notes (PDF)`
+      pdfTitle: `${newFolderName.trim()} High-Yield Notes`
     };
-    setFolders(prev => [...prev, newF]);
+    setFolders(prev => [newF, ...prev]);
     setNewFolderName('');
     setIsFolderModalOpen(false);
   };
 
   const currentFolder = folders.find(f => f.id === activeFolderId);
+  const activeSubjectName = subjects.find(s => s.id === selectedSubject)?.name || 'All Subjects';
+
+  const filteredFolders = folders.filter(f => {
+    if (selectedSubject === 'all') return true;
+    return f.subject.toLowerCase() === activeSubjectName.toLowerCase();
+  });
+
   const displayedNotes = notes.filter(n => {
     const matchesSearch = (
       n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -324,8 +468,10 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
       (n.subject && n.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
       n.content.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    const matchesSubject = (selectedSubject === 'all') || (n.subject.toLowerCase() === activeSubjectName.toLowerCase());
+
     if (activeFolderId) return matchesSearch && n.folderId === activeFolderId;
-    return matchesSearch;
+    return matchesSearch && matchesSubject;
   });
 
   const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -338,7 +484,6 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
     cursor: 'pointer'
   };
 
-  // FULLSCREEN PROFILE VIEW
   if (activeView === 'profile') {
     return (
       <Profile 
@@ -381,7 +526,6 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
           transition: 'all 0.25s ease'
         }}>
           <div>
-            {/* Top Brand Logo */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', marginBottom: '24px' }}>
               <div 
                 onClick={() => { setActiveView('dashboard'); onNavigate && onNavigate('home'); }} 
@@ -486,6 +630,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                   </span>
                 </button>
 
+                {/* 1. Live Quiz with SOON badge */}
                 <button 
                   onClick={() => setActiveView('quiz')}
                   style={{
@@ -506,8 +651,10 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                 >
                   <HelpCircle size={18} color={activeView === 'quiz' ? '#15803d' : '#a1a1aa'} />
                   <span>Live Quiz</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '9px', fontWeight: 800, backgroundColor: '#fef3c7', color: '#b45309', padding: '2px 6px', borderRadius: '9999px' }}>SOON</span>
                 </button>
 
+                {/* 2. Socratic AI with SOON badge */}
                 <button 
                   onClick={() => setActiveView('socratic')}
                   style={{
@@ -528,12 +675,11 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                 >
                   <BrainCircuit size={18} color={activeView === 'socratic' ? '#15803d' : '#a1a1aa'} />
                   <span>Socratic AI</span>
-                  <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 800, backgroundColor: 'var(--emerald-800)', color: '#ffffff', padding: '2px 7px', borderRadius: '9999px' }}>PRO</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '9px', fontWeight: 800, backgroundColor: '#fef3c7', color: '#b45309', padding: '2px 6px', borderRadius: '9999px' }}>SOON</span>
                 </button>
               </nav>
             </div>
 
-            {/* General Section */}
             <div style={{ marginTop: '54px' }}>
               <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#a1a1aa', padding: '0 8px', marginBottom: '8px' }}>
                 General
@@ -570,6 +716,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                   <ArrowUpRight size={14} color="#a1a1aa" style={{ marginLeft: 'auto' }} />
                 </button>
 
+                {/* 3. Videos with SOON badge */}
                 <button 
                   onClick={() => setActiveView('player')}
                   style={{ 
@@ -590,6 +737,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                 >
                   <PlaySquare size={18} color="#a1a1aa" />
                   <span>Videos</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '9px', fontWeight: 800, backgroundColor: '#fef3c7', color: '#b45309', padding: '2px 6px', borderRadius: '9999px' }}>SOON</span>
                 </button>
 
                 <button 
@@ -606,7 +754,6 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
             </div>
           </div>
 
-          {/* Download App Bottom Card */}
           <div style={{
             color: '#ffffff',
             padding: '18px',
@@ -690,7 +837,8 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
           justifyContent: 'space-between',
           gap: '16px',
           boxSizing: 'border-box',
-          width: '100%'
+          width: '100%',
+          position: 'relative'
         }}>
           <h1 style={{ 
             fontSize: '24px', 
@@ -701,7 +849,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
             margin: 0,
             flexShrink: 0
           }}>
-            {activeView === 'dashboard' ? 'Dashboard' : activeView === 'notes' ? (activeFolderId ? currentFolder?.name : 'Keep Notes') : activeView === 'quiz' ? 'Live Quiz' : activeView === 'socratic' ? 'Socratic AI' : 'Video Tunnel'}
+            {activeView === 'dashboard' ? 'Dashboard' : activeView === 'notes' ? (activeFolderId ? currentFolder?.name : 'Keep Notes') : activeView === 'quiz' ? 'Live Quiz' : activeView === 'socratic' ? 'Socratic AI Engine' : 'Video Tunneling'}
           </h1>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -726,40 +874,80 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
               />
             </div>
 
-            <button style={{ 
-              width: '38px', 
-              height: '38px', 
-              borderRadius: '50%', 
-              backgroundColor: '#f5f5f1', 
-              border: 'none', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              color: '#18181b', 
-              cursor: 'pointer', 
-              position: 'relative'
-            }}>
-              <Bell size={17} />
-              <span style={{ 
-                position: 'absolute', 
-                top: '8px', 
-                right: '8px', 
-                width: '6px', 
-                height: '6px', 
-                borderRadius: '50%', 
-                backgroundColor: '#ef4444' 
-              }}></span>
-            </button>
+            {/* Notification Bell Dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                style={{ 
+                  width: '38px', 
+                  height: '38px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#f5f5f1', 
+                  border: 'none', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  color: '#18181b', 
+                  cursor: 'pointer', 
+                  position: 'relative'
+                }}
+              >
+                <Bell size={17} />
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '8px', 
+                  right: '8px', 
+                  width: '6px', 
+                  height: '6px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#ef4444' 
+                }}></span>
+              </button>
 
-            {/* Profile Picture */}
+              {isNotifOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '46px',
+                  right: '0',
+                  width: '280px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '18px',
+                  boxShadow: '0 12px 36px rgba(0,0,0,0.14)',
+                  border: '1px solid #e2e8f0',
+                  padding: '12px',
+                  zIndex: 999
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px 8px 8px', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800 }}>Notifications</span>
+                    <span 
+                      style={{ fontSize: '10px', color: '#15803d', fontWeight: 700, cursor: 'pointer' }} 
+                      onClick={() => setNotifications(prev => prev.map(n => ({...n, unread: false})))}
+                    >
+                      Mark all read
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                    {notifications.map(n => (
+                      <div key={n.id} style={{ padding: '8px', borderRadius: '10px', backgroundColor: n.unread ? '#f8fafc' : '#ffffff', border: '1px solid #f1f5f9' }}>
+                        <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a' }}>{n.title}</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{n.time}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Avatar */}
             <img 
               onClick={() => setActiveView('profile')}
-              src={user?.photoURL || `${baseUrl}avatar/avatar1.jpg`} 
+              src={currentAvatar} 
               alt="User Profile" 
               title="View Candidate Profile"
               referrerPolicy="no-referrer"
               onError={(e) => {
-                e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80";
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = `${baseUrl}avatar/avatar1.jpg`;
               }}
               style={{ 
                 width: '38px', 
@@ -776,7 +964,6 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
 
         {/* ================= 3. ACTIVE VIEW CONTENT ================= */}
         {activeView === 'dashboard' ? (
-          /* ================= MAIN DASHBOARD METRICS ================= */
           <div style={{
             backgroundColor: '#ffffff',
             borderRadius: '30px',
@@ -797,7 +984,10 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                   return (
                     <button
                       key={sub.id}
-                      onClick={() => setSelectedSubject(sub.id)}
+                      onClick={() => {
+                        setSelectedSubject(sub.id);
+                        setActiveFolderId(null);
+                      }}
                       style={{
                         padding: '7px 16px',
                         borderRadius: '9999px',
@@ -855,7 +1045,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                 fontFamily: 'var(--font-heading)'
               }}>
                 <CalendarIcon size={14} color="#18181b" />
-                <span>1 Sep 2024 - 31 Sep 2024</span>
+                <span>1 Sep 2026 - 31 Oct 2026</span>
               </div>
             </div>
 
@@ -927,8 +1117,6 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                   cursor: 'pointer',
                   transition: 'transform 0.15s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: '#14532d' }}>Notes (Open Studio)</span>
@@ -946,7 +1134,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
 
               <div 
                 onClick={() => setActiveView('socratic')}
-                title="Click to open Socratic AI"
+                title="Click to explore Socratic AI Engine"
                 style={{ 
                   backgroundColor: '#ffffff', 
                   border: '1px solid #ebece6',
@@ -960,25 +1148,23 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                   cursor: 'pointer',
                   transition: 'transform 0.15s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#14532d' }}>Socratic AI (Launch)</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#14532d' }}>Socratic AI Engine</span>
                   <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#eef9f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ArrowUpRight size={15} color="#14532d" />
                   </div>
                 </div>
                 <div>
-                  <div className="num-bold" style={{ fontSize: '36px', lineHeight: 1, marginBottom: '6px', color: '#18181b' }}>2</div>
-                  <span style={{ fontSize: '10.5px', fontWeight: 700, backgroundColor: '#fdf2f2', color: '#b91c1c', padding: '3px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#ef4444' }}></span> On Discuss / Analysis
+                  <div className="num-bold" style={{ fontSize: '36px', lineHeight: 1, marginBottom: '6px', color: '#18181b' }}>PRO</div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, backgroundColor: '#fef3c7', color: '#b45309', padding: '3px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    Feature will be added soon
                   </span>
                 </div>
               </div>
             </section>
 
-            {/* Analytics & Progress grid */}
+            {/* Analytics & Progress Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: '16px', alignItems: 'start', width: '100%' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, width: '100%' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.85fr 1fr', gap: '16px' }}>
@@ -1237,7 +1423,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                 </div>
               </div>
 
-              {/* Right Column: Assignments & Tracker */}
+              {/* Right Column: Assignments & Tracker (Differentiated Data) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '280px', flexShrink: 0 }}>
                 <div style={{ 
                   backgroundColor: '#ffffff', 
@@ -1261,71 +1447,58 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                       fontSize: '10.5px', 
                       fontWeight: 800, 
                       color: '#14532d', 
-                      cursor: 'pointer',
-                      boxShadow: '0 1px 3px rgba(20, 83, 45, 0.08)'
+                      cursor: 'pointer'
                     }}>
-                      + New
+                      Active
                     </button>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                       <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <BookMarked size={17} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Develop API Endpoints
+                          Ray & Wave Optics PYQ
                         </h4>
-                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 26, 2024</p>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Oct 30, 2026</p>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                       <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#ccfbf1', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Dna size={17} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Onboarding Flow
+                          Biomolecules & DNA Revision
                         </h4>
-                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 28, 2024</p>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 02, 2026</p>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                       <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#eef9f2', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Binary size={17} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Build Dashboard
+                          Definite Integrals Set 4
                         </h4>
-                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 30, 2024</p>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 05, 2026</p>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                       <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#fef6e7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Zap size={17} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Optimize Page Load
+                          Organic Conversions Drill
                         </h4>
-                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Dec 5, 2024</p>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Sparkles size={17} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <h4 style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Cross-Browser Testing
-                        </h4>
-                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Dec 6, 2024</p>
+                        <p style={{ fontSize: '10.5px', color: '#71717a', margin: '1px 0 0 0' }}>Due date: Nov 08, 2026</p>
                       </div>
                     </div>
                   </div>
@@ -1356,7 +1529,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                     <div className="num-bold" style={{ fontSize: '38px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px', color: '#ffffff', textShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>
                       {formatTimer(trackerSeconds)}
                     </div>
-                    <p style={{ fontSize: '10.5px', color: '#dcfce7', margin: '3px 0 0 0', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>Topic: Organic Reaction Mechanism</p>
+                    <p style={{ fontSize: '10.5px', color: '#dcfce7', margin: '3px 0 0 0', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>Topic: Optics & Derivations</p>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
@@ -1502,12 +1675,12 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <h3 style={{ fontSize: '17px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
-                    Recent Folders
+                    {selectedSubject === 'all' ? 'All Subject Folders' : `${activeSubjectName} Folders`}
                   </h3>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
-                  {folders.map(folder => {
+                  {filteredFolders.map(folder => {
                     const colorConfig = COLOR_PRESETS.find(c => c.id === folder.color) || COLOR_PRESETS[0];
 
                     return (
@@ -1588,7 +1761,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <h3 style={{ fontSize: '17px', fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#18181b', margin: 0 }}>
-                  {activeFolderId ? `Notes in ${currentFolder?.name}` : 'My Study Notes'}
+                  {activeFolderId ? `Notes in ${currentFolder?.name}` : (selectedSubject === 'all' ? 'All Study Notes' : `${activeSubjectName} Study Notes`)}
                 </h3>
 
                 <button
@@ -1708,7 +1881,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
             </div>
           </div>
         ) : (
-          /* ================= OTHER TOOLS ================= */
+          /* ================= COMING SOON SCREENS FOR THE 3 FEATURES ================= */
           <div style={{
             backgroundColor: '#ffffff',
             borderRadius: '30px',
@@ -1716,15 +1889,167 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
             width: '100%',
             boxSizing: 'border-box'
           }}>
-            {activeView === 'quiz' && <MockTest active={true} onBackToDashboard={() => setActiveView('dashboard')} />}
-            {activeView === 'player' && <VideoTunnel onBackToDashboard={() => setActiveView('dashboard')} />}
-            {activeView === 'socratic' && <SocraticAI hint="idle" setHint={() => {}} onBackToDashboard={() => setActiveView('dashboard')} />}
+            {/* 1. Live Quiz Coming Soon Screen */}
+            {activeView === 'quiz' && (
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                maxWidth: '600px',
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px'
+              }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '20px',
+                  backgroundColor: '#fef3c7',
+                  color: '#b45309',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <HelpCircle size={32} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', color: '#b45309', backgroundColor: '#fef3c7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase' }}>
+                  Feature In Active Development
+                </span>
+                <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                  Adaptive Live Quiz & Error Remediation Lab
+                </h2>
+                <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+                  Competitive timed PYQ sprints with automatic trap detection, negative marking telemetry, and retest flash-drills. This feature will be added soon.
+                </p>
+                <button
+                  onClick={() => setActiveView('dashboard')}
+                  style={{
+                    marginTop: '8px',
+                    padding: '10px 22px',
+                    borderRadius: '14px',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            )}
+
+            {/* 2. Socratic AI Coming Soon Screen */}
+            {activeView === 'socratic' && (
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                maxWidth: '600px',
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px'
+              }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '20px',
+                  backgroundColor: '#eef9f2',
+                  color: '#15803d',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <BrainCircuit size={32} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', color: '#b45309', backgroundColor: '#fef3c7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase' }}>
+                  Feature In Active Development
+                </span>
+                <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                  Socratic AI Hint Engine
+                </h2>
+                <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+                  Our real-time Socratic hint generator guides aspirants step-by-step through complex numerical roadblocks without immediately revealing answers. This feature will be added soon.
+                </p>
+                <button
+                  onClick={() => setActiveView('dashboard')}
+                  style={{
+                    marginTop: '8px',
+                    padding: '10px 22px',
+                    borderRadius: '14px',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            )}
+
+            {/* 3. Video Tunneling Coming Soon Screen */}
+            {activeView === 'player' && (
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                maxWidth: '600px',
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px'
+              }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '20px',
+                  backgroundColor: '#eff6ff',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <PlaySquare size={32} />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', color: '#1e40af', backgroundColor: '#dbeafe', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase' }}>
+                  Feature In Active Development
+                </span>
+                <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                  Video Tunneling & Ad-Free Lecture Engine
+                </h2>
+                <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+                  Zero-distraction high-speed lecture playback with synced chapter timestamps and derivation note-taking. This feature will be added soon.
+                </p>
+                <button
+                  onClick={() => setActiveView('dashboard')}
+                  style={{
+                    marginTop: '8px',
+                    padding: '10px 22px',
+                    borderRadius: '14px',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            )}
           </div>
         )}
 
       </div>
 
-      {/* ================= MODAL: RICH NOTE CREATOR & EDITOR ================= */}
+      {/* MODAL: RICH NOTE CREATOR & EDITOR */}
       {isNoteModalOpen && (
         <div style={{
           position: 'fixed',
@@ -1797,10 +2122,9 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                       boxSizing: 'border-box'
                     }}
                   >
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="Biology">Biology</option>
+                    {subjects.filter(s => s.id !== 'all').map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
                     <option value="General">General</option>
                   </select>
                 </div>
@@ -2017,7 +2341,7 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
         </div>
       )}
 
-      {/* ================= MODAL: CREATE FOLDER ================= */}
+      {/* MODAL: CREATE FOLDER */}
       {isFolderModalOpen && (
         <div style={{
           position: 'fixed',
@@ -2089,10 +2413,10 @@ export default function Dashboard({ onNavigate, user, onLogout }) {
                     boxSizing: 'border-box'
                   }}
                 >
-                  <option value="Physics">Physics</option>
-                  <option value="Chemistry">Chemistry</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Biology">Biology</option>
+                  {subjects.filter(s => s.id !== 'all').map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                  <option value="General">General</option>
                 </select>
               </div>
 
